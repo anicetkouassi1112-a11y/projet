@@ -18,7 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add_theme') {
         $titre = appCleanText((string) ($_POST['titre'] ?? ''), 100);
         $sessionId = filter_var($_POST['session_id'] ?? 0, FILTER_VALIDATE_INT);
-        $result = Addtheme($titre, $sessionId === false ? 0 : (int) $sessionId);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->addTheme(
+            $titre,
+            $sessionId === false ? 0 : (int) $sessionId
+        );
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')
@@ -27,14 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
         $titre = appCleanText((string) ($_POST['titre'] ?? ''), 100);
         $sessionId = filter_var($_POST['session_id'] ?? 0, FILTER_VALIDATE_INT);
-        $result = updateTheme((int) $id, $titre, $sessionId === false ? 0 : (int) $sessionId);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->updateTheme(
+            (int) $id,
+            $titre,
+            $sessionId === false ? 0 : (int) $sessionId
+        );
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')
         );
     } elseif ($action === 'delete_theme') {
         $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
-        $result = deleteTheme((int) $id);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->deleteTheme((int) $id);
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')

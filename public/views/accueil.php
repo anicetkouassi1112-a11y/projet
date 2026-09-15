@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 $currentPage = 'accueil';
 $assetBase = app_url('Backend/Assets');
 $pageTitle = 'Accueil - Fun&Loisirs';
-$theme = getCurrentThemeTitle();
+$theme = appContainer()->get(\Patro\Inscription\ThemeService::class)->getCurrentThemeTitle();
 
 $activiteImages = [];
 try {

@@ -717,34 +717,6 @@ function creerSection(string $nomSection, string $description = '', string $genr
         );
 }
 
-function Addtheme(string $titre, int $sessionId): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->addTheme($titre, $sessionId);
-}
-
-function getCurrentThemeTitle(?PDO $connect = null): string
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->getCurrentThemeTitle();
-}
-
-function updateTheme(int $id, string $titre, int $sessionId): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->updateTheme($id, $titre, $sessionId);
-}
-
-function deleteTheme(int $id): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->deleteTheme($id);
-}
-
 // Genere des codes a usage unique pour une session, sans attribution de section.
 function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?string $dateExpiration = null): array
 {
