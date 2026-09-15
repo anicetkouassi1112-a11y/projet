@@ -710,17 +710,6 @@ function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null)
         ->ensureSession($anneeVal, $typeSession);
 }
 
-// Session animateur de reference pour les formulaires publics.
-function currentAnimateurSessionId(?PDO $connect = null): int
-{
-    $annee = (int) ($_SESSION['annee_active'] ?? date('Y'));
-    if ($annee < 2000 || $annee > 2100) {
-        $annee = (int) date('Y');
-    }
-
-    return ensureSession($annee, currentSessionType(), $connect);
-}
-
 function sessionLabelById(int $idSession, ?PDO $connect = null): string
 {
     return appContainer()
@@ -742,20 +731,6 @@ function getAllSections(?PDO $connect = null): array
         ->getAllSections();
 }
 
-function nomSectionExiste(string $nom, ?PDO $connect = null): bool
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->nomSectionExiste($nom);
-}
-
-function titreExiste(string $titre, ?PDO $connect = null, ?int $sessionId = null): bool
-{
-    $sessionId = $sessionId ?: getActiveAdminSessionId();
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\ThemeRepository::class)
-        ->existsByTitle($titre, $sessionId);
-}
 function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
 {
     return appContainer()
@@ -776,13 +751,6 @@ function creerSection(string $nomSection, string $description = '', string $genr
             $ageMin === false ? 0 : (int) $ageMin,
             $ageMax === false ? 0 : (int) $ageMax
         );
-}
-
-function sessionExists(int $idSession, ?PDO $connect = null): bool
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->sessionExists($idSession);
 }
 
 function Addtheme(string $titre, int $sessionId): array
@@ -991,25 +959,6 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
         ->findMatchingSection($genre, $age, $typeSession);
 }
 
-function determineSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?string $typeSession = null): ?string
-{
-    $matchedSection = findMatchingSection($genre, $dateNaissance, $referenceYear, null, $typeSession);
-    return $matchedSection ? (string) $matchedSection['nom_section'] : null;
-}
-function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAnneeIdByValue($anneeVal);
-}
-
-function getAnneeValueById(int $anneeId, ?PDO $connect = null): ?int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAnneeValueById($anneeId);
-}
-
 function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
 {
     return appContainer()
@@ -1038,21 +987,6 @@ function canAccessPublicInscrit(int $idInscrit): bool
     }
 
     return isset($_SESSION['last_inscrit_id']) && (int) $_SESSION['last_inscrit_id'] === $idInscrit;
-}
-
-function findInscritIdByIdentity(
-    string $nom,
-    string $prenom,
-    string $dateNaissance,
-    int $anneeId,
-    string $typeSession,
-    ?PDO $connect = null
-): ?int
-{
-    $typeSession = normalizeSessionType($typeSession);
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession);
 }
 
 function identifierLookupKey(string $value): string
