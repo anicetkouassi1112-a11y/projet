@@ -881,7 +881,7 @@ function getActiviteImageByOrder(int $ordre, array $images, string $fallback = '
 {
     foreach ($images as $image) {
         if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-            return activiteImageUrl((int) $image['id']);
+            return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
         }
     }
     return $fallback;

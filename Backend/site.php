@@ -22,36 +22,6 @@ function activiteStorageDirectory(): string
     return $default;
 }
 
-function getVisibleActiviteImages(?PDO $connect = null): array
-{
-    try {
-        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-        if (!$repository->ensureSessionColumn()) {
-            return [];
-        }
-
-        return $repository->findVisibleBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
-    } catch (PDOException $e) {
-        error_log('Visible activite images error: ' . $e->getMessage());
-        return [];
-    }
-}
-
-function getAllActiviteImages(?PDO $connect = null): array
-{
-    try {
-        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-        if (!$repository->ensureSessionColumn()) {
-            return [];
-        }
-
-        return $repository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
-    } catch (PDOException $e) {
-        error_log('All activite images error: ' . $e->getMessage());
-        return [];
-    }
-}
-
 function activiteImageUrl(int $id): string
 {
     return app_url('public/media/activite.php') . '?' . http_build_query(['id' => $id]);
@@ -246,14 +216,6 @@ function resolveActiviteImagePath(string $storedPath): string
     $path = activiteStorageDirectory() . DIRECTORY_SEPARATOR . $relative;
 
     return is_file($path) ? $path : '';
-}
-
-function getActiviteImageById(int $id, ?PDO $connect = null): array
-{
-    $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-    $repository->ensureSessionColumn();
-
-    return $repository->findByIdAndSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()) ?? [];
 }
 
 /**

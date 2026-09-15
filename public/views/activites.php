@@ -9,7 +9,11 @@ $theme = appContainer()->get(\Patro\Inscription\ThemeService::class)->getCurrent
 
 $activiteImages = [];
 try {
-    $activiteImages = getVisibleActiviteImages(); // triées par ordre ASC
+    $activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+    $activiteRepository->ensureSessionColumn();
+    $activiteImages = $activiteRepository->findVisibleBySession(
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+    );
 } catch (Throwable $e) {
     error_log('Activites images error: ' . $e->getMessage());
 }

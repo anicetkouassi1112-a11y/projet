@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
+$activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
 
 $currentSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
     ->ensureSession($anneeActive, $typeSessionActive);
@@ -52,7 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ordre = $ordre === false ? 0 : max(0, min(5, (int) $ordre));
         $visible = isset($_POST['visible']) && $_POST['visible'] === '1';
 
-        $imagesExistantes = array_filter(getAllActiviteImages(), fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
+        $activiteRepository->ensureSessionColumn();
+        $allImages = $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
+        $imagesExistantes = array_filter($allImages, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
 
         $ordreDejaPris = array_filter($imagesExistantes, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
@@ -71,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ordre = $ordre === false ? 0 : max(0, min(5, (int) $ordre));
         $visible = isset($_POST['visible']) && $_POST['visible'] === '1';
 
-        $autresImages = array_filter(getAllActiviteImages(), fn($img) => (int) $img['id'] !== (int) $id && (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
+        $autresImages = array_filter($allImages ?? [], fn($img) => (int) $img['id'] !== (int) $id && (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
         $ordreDejaPris = array_filter($autresImages, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
         
@@ -90,7 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirectTo(lien('accueil_admin'));
 }
 
-$images = getAllActiviteImages();
+$activiteRepository->ensureSessionColumn();
+$images = $activiteRepository->findAllBySession(
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+);
 $imagesAccueil = array_filter($images, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
 $themes = appContainer()->get(\Patro\Inscription\ThemeService::class)->getAllThemes();
 $sessions = appContainer()->get(\Patro\Inscription\SessionService::class)->getAllSessions();
