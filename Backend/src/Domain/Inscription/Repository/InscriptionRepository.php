@@ -190,6 +190,48 @@ final class InscriptionRepository
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /** @return list<array<string,mixed>> */
+    public function findPaidTeeShirts(int $yearId, string $sessionType, ?string $genre = null, ?string $term = null): array
+    {
+        $conditions = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+            'i.prix_tee_shirt > 0',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => 'inscrit',
+        ];
+        if ($genre !== null && $genre !== '') {
+            $conditions[] = 'u.genre = :genre';
+            $parameters[':genre'] = $genre;
+        }
+        if ($term !== null && $term !== '') {
+            $conditions[] = '(u.nom LIKE :term OR u.prenom LIKE :term OR CONCAT(u.nom, " ", u.prenom) LIKE :term)';
+            $parameters[':term'] = '%' . $term . '%';
+        }
+
+        $orderBy = $sessionType === 'vacance'
+            ? 'sec.nom_section ASC, u.nom ASC, u.prenom ASC'
+            : 'u.genre ASC, u.nom ASC, u.prenom ASC';
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription AS id_inscrit, i.identifiant,
+                    i.prix_tee_shirt, i.taille_tee_shirt,
+                    u.nom, u.prenom, u.genre, u.tel, sec.nom_section AS section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             INNER JOIN session s ON s.id_session = i.id_session
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             WHERE ' . implode(' AND ', $conditions) . '
+             ORDER BY ' . $orderBy
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function validatePending(int $inscriptionId): bool
     {
         $statement = $this->connection->prepare(

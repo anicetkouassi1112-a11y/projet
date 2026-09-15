@@ -31,47 +31,9 @@ if ($genreFilterKey !== '') {
 
 try {
     $anneeId = selectedYearId($anneeActive);
-    $params = [
-        ':annee_id' => $anneeId,
-        ':type_session' => $typeSessionActive,
-        ':etat' => 'inscrit',
-        ':prix_tee_shirt_min' => 0, // Filtre pour récupérer UNIQUEMENT ceux qui ont payé
-    ];
-
-    $where = 's.annee_id = :annee_id
-        AND s.type_session = :type_session
-        AND i.etat = :etat
-        AND i.prix_tee_shirt > :prix_tee_shirt_min';
-        
-    if ($genreFilter !== '') {
-        $where .= ' AND u.genre = :genre';
-        $params[':genre'] = $genreFilter;
-    }
-    if ($searchQuery !== '') {
-        $where .= ' AND (u.nom LIKE :search_nom OR u.prenom LIKE :search_prenom OR CONCAT(u.nom, " ", u.prenom) LIKE :search_fullname)';
-        $searchTerm = '%' . $searchQuery . '%';
-        $params[':search_nom'] = $searchTerm;
-        $params[':search_prenom'] = $searchTerm;
-        $params[':search_fullname'] = $searchTerm;
-    }
-
-    // Tri : par section pour la vacance, par genre pour le scolaire
-    $orderBy = $showSectionColumn
-        ? 'sec.nom_section ASC, u.nom ASC, u.prenom ASC'
-        : 'u.genre ASC, u.nom ASC, u.prenom ASC';
-
-    $stmt = getConnection()->prepare(
-        'SELECT i.id_inscription AS id_inscrit, i.identifiant, i.prix_tee_shirt, i.taille_tee_shirt,
-                u.nom, u.prenom, u.genre, u.tel, sec.nom_section AS section
-         FROM inscription i
-         INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-         INNER JOIN session s ON s.id_session = i.id_session
-         LEFT JOIN section sec ON sec.id_section = i.id_section
-         WHERE ' . $where . '
-         ORDER BY ' . $orderBy
-    );
-    $stmt->execute($params);
-    $teeShirtRegistrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $teeShirtRegistrations = appContainer()
+        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+        ->findPaidTeeShirts($anneeId, $typeSessionActive, $genreFilter, $searchQuery);
 
     if ($searchQuery !== '' && !$teeShirtRegistrations) {
         $message = 'Aucun resultat pour "' . e($searchQuery) . '".';
