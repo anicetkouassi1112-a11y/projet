@@ -1,8 +1,10 @@
 <?php
 $teeShirtCandidates = is_array($teeShirtCandidates ?? null) ? $teeShirtCandidates : [];
 $baseRedirectParams = is_array($baseRedirectParams ?? null) ? $baseRedirectParams : [];
-$teeShirtPrice = (int) ($teeShirtPrice ?? teeShirtPrice());
-$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? currentSessionType());
+$teeShirtPrice = (int) ($teeShirtPrice ?? appContainer()
+    ->get(\Patro\Application\Configuration\ConfigurationService::class)
+    ->teeShirtPrice());
+$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $modalAction = 'Tee_shirts.php';
 if ($baseRedirectParams) {
     $modalAction .= '?' . http_build_query($baseRedirectParams);

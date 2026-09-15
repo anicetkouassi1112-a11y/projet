@@ -15,14 +15,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Jeton CSRF invalide. Veuillez recharger la page.';
         $alertType = 'danger';
     } else {
-        $result = registerAnimateurWithCode(
-            $code,
-            $nom,
-            $prenom,
-            $genre,
-            $tel,
-            (string) ($_POST['password'] ?? ''),
-            (string) ($_POST['password_confirm'] ?? '')
+        $result = appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)->execute(
+            new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
+                $code,
+                $nom,
+                $prenom,
+                $genre,
+                $tel,
+                (string) ($_POST['password'] ?? ''),
+                (string) ($_POST['password_confirm'] ?? ''),
+                appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+            )
         );
         $message = (string) ($result['message'] ?? '');
         $alertType = (string) ($result['alert_type'] ?? 'danger');

@@ -22,154 +22,6 @@ function activiteStorageDirectory(): string
     return $default;
 }
 
-/**
- * Récupère tous les jeux de la base de données.
- */
-function getAllJeux(?PDO $connect = null): array
-{
-    return appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->findAll();
-}
-
-/**
- * Crée un nouveau jeu dans la base de données globale.
- */
-function creerJeu(
-    string $nom,
-    string $objectif = '',
-    string $regles = '',
-    string $deroulement = '',
-    string $materiel = '',
-    string $age_conseille = '',
-    string $duree = '',
-    string $nombre_joueurs = '',
-    string $lieu = '',
-    string $type_jeu = '',
-    string $mise_en_place = '',
-    string $fin_jeu = '',
-    string $but_pedagogique = ''
-): array {
-    $nom = appCleanText($nom, 150);
-    $objectif = appCleanText($objectif, 5000);
-    $regles = appCleanText($regles, 5000);
-    $age_conseille = appCleanText($age_conseille, 50);
-    $duree = appCleanText($duree, 50);
-    $nombre_joueurs = appCleanText($nombre_joueurs, 100);
-    $lieu = appCleanText($lieu, 100);
-    $type_jeu = appCleanText($type_jeu, 100);
-    $materiel = appCleanText($materiel, 5000);
-    $mise_en_place = appCleanText($mise_en_place, 5000);
-    $deroulement = appCleanText($deroulement, 5000);
-    $fin_jeu = appCleanText($fin_jeu, 5000);
-    $but_pedagogique = appCleanText($but_pedagogique, 5000);
-
-    if ($nom === '') {
-        return ['success' => false, 'message' => 'Le nom du jeu est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    try {
-        $id = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->create([
-            'nom' => $nom, 'objectif' => $objectif, 'regles' => $regles,
-            'deroulement' => $deroulement, 'materiel' => $materiel,
-            'age_conseille' => $age_conseille, 'duree' => $duree,
-            'nombre_joueurs' => $nombre_joueurs, 'lieu' => $lieu,
-            'type_jeu' => $type_jeu, 'mise_en_place' => $mise_en_place,
-            'fin_jeu' => $fin_jeu, 'but_pedagogique' => $but_pedagogique,
-        ]);
-
-        return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => $id];
-    } catch (PDOException $e) {
-        error_log('Création jeu erreur : ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Erreur lors de l\'enregistrement dans la base de données.', 'alert_type' => 'danger'];
-    }
-}
-
-/**
- * Met à jour un jeu existant.
- */
-function updateJeu(int $id, array $data): array
-{
-    if ($id <= 0) {
-        return ['success' => false, 'message' => 'Données invalides.', 'alert_type' => 'warning'];
-    }
-
-    $normalized = [];
-    foreach ($data as $key => $value) {
-        $field = ltrim((string) $key, ':');
-        if ($field !== '') {
-            $normalized[$field] = $value;
-        }
-    }
-
-    if (empty($normalized['nom'])) {
-        return ['success' => false, 'message' => 'Données invalides.', 'alert_type' => 'warning'];
-    }
-
-    try {
-        $updated = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->update($id, $normalized);
-        return $updated
-            ? ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success']
-            : ['success' => false, 'message' => 'Aucune donnée valide à mettre à jour.', 'alert_type' => 'warning'];
-    } catch (PDOException $e) {
-        error_log('Update jeu erreur : ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Erreur lors de la modification.', 'alert_type' => 'danger'];
-    }
-}
-
-/**
- * Supprime un jeu.
- */
-function deleteJeu(int $id): array
-{
-    if ($id <= 0) {
-        return ['success' => false, 'message' => 'ID invalide.', 'alert_type' => 'warning'];
-    }
-
-    try {
-        $deleted = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->delete($id);
-        return $deleted
-            ? ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success']
-            : ['success' => false, 'message' => 'Jeu introuvable.', 'alert_type' => 'warning'];
-    } catch (PDOException $e) {
-        return ['success' => false, 'message' => 'Erreur lors de la suppression.', 'alert_type' => 'danger'];
-    }
-}
-
-function getVisibleActiviteImages(?PDO $connect = null): array
-{
-    try {
-        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-        if (!$repository->ensureSessionColumn()) {
-            return [];
-        }
-
-        return $repository->findVisibleBySession(getActiveAdminSessionId());
-    } catch (PDOException $e) {
-        error_log('Visible activite images error: ' . $e->getMessage());
-        return [];
-    }
-}
-
-function getAllActiviteImages(?PDO $connect = null): array
-{
-    try {
-        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-        if (!$repository->ensureSessionColumn()) {
-            return [];
-        }
-
-        return $repository->findAllBySession(getActiveAdminSessionId());
-    } catch (PDOException $e) {
-        error_log('All activite images error: ' . $e->getMessage());
-        return [];
-    }
-}
-
-function activiteImageUrl(int $id): string
-{
-    return app_url('public/media/activite.php') . '?' . http_build_query(['id' => $id]);
-}
-
-
 function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0, bool $visible = true, string $description = ''): array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -220,7 +72,7 @@ function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0
         $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
 
-        $id = $repository->create(getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
+        $id = $repository->create(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
 
         return ['success' => true, 'message' => 'Image ajoutee avec succes.', 'id' => $id];
     } catch (PDOException $e) {
@@ -241,11 +93,11 @@ function updateActiviteImageMeta(int $id, string $titre, int $ordre, bool $visib
     $description = appCleanText($description, 5000);
 
     $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-    if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, getActiveAdminSessionId())) {
+    if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $updated = $repository->updateMeta($id, getActiveAdminSessionId(), $titre, $ordre, $visible, $description);
+    $updated = $repository->updateMeta($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $titre, $ordre, $visible, $description);
 
     return $updated
         ? ['success' => true, 'message' => 'Image mise a jour.']
@@ -304,7 +156,7 @@ function replaceActiviteImageFile(int $id, string $tmpPath, string $mimeType, ?s
     try {
         $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
-        if (!$repository->replaceImagePath($id, getActiveAdminSessionId(), $storedPath)) {
+        if (!$repository->replaceImagePath($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $storedPath)) {
             @unlink($newPath);
             return ['success' => false, 'message' => 'Image introuvable.'];
         }
@@ -334,12 +186,12 @@ function deleteActiviteImage(int $id): array
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $image = $repository->findByIdAndSession($id, getActiveAdminSessionId());
+    $image = $repository->findByIdAndSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
     if (!$image) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    if (!$repository->deleteBySession($id, getActiveAdminSessionId())) {
+    if (!$repository->deleteBySession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
@@ -358,14 +210,6 @@ function resolveActiviteImagePath(string $storedPath): string
     $path = activiteStorageDirectory() . DIRECTORY_SEPARATOR . $relative;
 
     return is_file($path) ? $path : '';
-}
-
-function getActiviteImageById(int $id, ?PDO $connect = null): array
-{
-    $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-    $repository->ensureSessionColumn();
-
-    return $repository->findByIdAndSession($id, getActiveAdminSessionId()) ?? [];
 }
 
 /**

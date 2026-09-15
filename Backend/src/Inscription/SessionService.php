@@ -142,16 +142,4 @@ class SessionService
         return $this->normalizeSessionType($configValue);
     }
 
-    /**
-     * Récupère une valeur de configuration
-     */
-    private function getConfig(string $key, ?string $default = null): ?string
-    {
-        try {
-            return $this->configurationRepository->find($key, $default);
-        } catch (PDOException $e) {
-            error_log('Get config error: ' . $e->getMessage());
-            return $default;
-        }
-    }
 }

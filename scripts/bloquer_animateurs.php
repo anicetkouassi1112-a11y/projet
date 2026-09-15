@@ -8,8 +8,9 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $options = getopt('', ['annee::', 'type_session::', 'days-after-open::', 'force']);
+$configuration = appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class);
 $annee = isset($options['annee']) ? (int) $options['annee'] : (int) date('Y');
-$typeSession = normalizeSessionType((string) ($options['type_session'] ?? currentSessionType()));
+$typeSession = normalizeSessionType((string) ($options['type_session'] ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()));
 $daysAfterOpen = isset($options['days-after-open']) ? (int) $options['days-after-open'] : null;
 $force = array_key_exists('force', $options);
 
@@ -19,7 +20,7 @@ if ($annee < 2000 || $annee > 2100) {
 }
 
 if ($daysAfterOpen !== null && !$force) {
-    $dateDebut = getConfigDateDebut();
+    $dateDebut = $configuration->registrationDateStart();
     if (!$dateDebut) {
         fwrite(STDOUT, "Blocage ignore: aucune date d ouverture configuree.\n");
         exit(0);
@@ -33,10 +34,11 @@ if ($daysAfterOpen !== null && !$force) {
 }
 
 try {
-    $conn = getConnection();
-    $idSession = ensureSession($annee, $typeSession, $conn);
-    $blocked = blockAnimateursNotRegistered($idSession, $conn);
-    fwrite(STDOUT, $blocked . " animateur(s) bloque(s) pour " . sessionLabelById($idSession, $conn) . ".\n");
+    $sessionService = appContainer()->get(\Patro\Inscription\SessionService::class);
+    $animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
+    $idSession = $sessionService->ensureSession($annee, $typeSession);
+    $blocked = $animateurRepository->blockNotRegistered($idSession);
+    fwrite(STDOUT, $blocked . " animateur(s) bloque(s) pour " . $sessionService->sessionLabelById($idSession) . ".\n");
     exit(0);
 } catch (Throwable $e) {
     error_log('CLI block animateurs error: ' . $e->getMessage());

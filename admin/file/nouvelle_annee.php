@@ -29,6 +29,6 @@ try {
 
 redirectTo('../home.php?' . http_build_query([
     'annee' => date('Y'),
-    'type_session' => currentSessionType(),
+    'type_session' => appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(),
 ]));
 ?>

@@ -14,7 +14,12 @@ if (!$id || $id <= 0) {
     exit;
 }
 
-$row = getActiviteImageById((int) $id);
+$activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+$activiteRepository->ensureSessionColumn();
+$row = $activiteRepository->findByIdAndSession(
+    (int) $id,
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+) ?? [];
 if (!$row) {
     http_response_code(404);
     exit;

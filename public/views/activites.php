@@ -5,11 +5,15 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 $currentPage = 'accueil';
 $assetBase = app_url('Backend/Assets');
 $pageTitle = 'Activités - Fun&Loisirs';
-$theme = getCurrentThemeTitle();
+$theme = appContainer()->get(\Patro\Inscription\ThemeService::class)->getCurrentThemeTitle();
 
 $activiteImages = [];
 try {
-    $activiteImages = getVisibleActiviteImages(); // triées par ordre ASC
+    $activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+    $activiteRepository->ensureSessionColumn();
+    $activiteImages = $activiteRepository->findVisibleBySession(
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+    );
 } catch (Throwable $e) {
     error_log('Activites images error: ' . $e->getMessage());
 }
@@ -49,7 +53,7 @@ $toneIndex = 0;
             ?>
             <div class="activity-wrapper">
                 <article class="fun-activitie <?= e('tone-' . $tone) ?>">
-                    <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e($title) ?>" loading="lazy" decoding="async">
+                    <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e($title) ?>" loading="lazy" decoding="async">
                     <span class="activity-badge"><i class="bi <?= e($icon) ?>"></i></span>
                 </article>
                 <div class="activity-content">

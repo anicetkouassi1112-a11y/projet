@@ -54,7 +54,7 @@ function displayFlashMessage(): void
 
 function selectedYearId(int $anneeActive): int
 {
-    return ensureAnnee($anneeActive);
+    return appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
 }
 
 function activeYearFromRequest(): int
@@ -64,7 +64,7 @@ function activeYearFromRequest(): int
 
 function activeSessionTypeFromRequest(): string
 {
-    return \Patro\Http\RequestHelper::activeSessionTypeFromRequest(currentSessionType());
+    return \Patro\Http\RequestHelper::activeSessionTypeFromRequest(appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 }
 
 function displayYearFromRequest(?int $defaultYear = null): int
@@ -74,5 +74,5 @@ function displayYearFromRequest(?int $defaultYear = null): int
 
 function displaySessionTypeFromRequest(?string $defaultType = null): string
 {
-    return \Patro\Http\RequestHelper::displaySessionTypeFromRequest($defaultType, currentSessionType());
+    return \Patro\Http\RequestHelper::displaySessionTypeFromRequest($defaultType, appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 }

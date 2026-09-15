@@ -1,8 +1,8 @@
-ï»¿<?php
+<?php
 // Les variables proviennent de home.php ou du contexte de page
 $pageName = $GLOBALS['pageName'] ?? $currentPage ?? 'Animateur';
 $anneeActive = $anneeActive ?? date('Y');
-$typeSessionActive = normalizeSessionType($typeSessionActive ?? currentSessionType(), currentSessionType());
+$typeSessionActive = normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $showSectionBreakdown = sectionBreakdownEnabled($typeSessionActive);
 
 $sectionCounts = $sectionCounts ?? [];
@@ -15,10 +15,10 @@ $sections = $config['sections'] ?? $sectionConfig['sections'] ?? [];
 $rawSection = trim((string) ($_GET['section'] ?? ''));
 $currentSection = ($rawSection !== '' && ctype_digit($rawSection)) ? $rawSection : null;
 
-// LibellÃ© global adaptÃ© au genre
+// Libellé global adapté au genre
 $allLabel = ($pageName === 'Animatrice') ? 'Toutes les Animatrices' : 'Tous les Animateurs';
 
-// ParamÃ¨tres de base pour les liens
+// Paramètres de base pour les liens
 $baseParams = [
     'page' => $pageName,
     'annee' => $anneeActive,

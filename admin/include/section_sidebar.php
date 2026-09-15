@@ -1,8 +1,8 @@
-ï»¿<?php
+<?php
 // Les variables proviennent de home.php ou du contexte de page
 $pageName = $GLOBALS['pageName'] ?? $pageName ?? 'statistique';
 $anneeActive = $anneeActive ?? date('Y');
-$typeSessionActive = normalizeSessionType($typeSessionActive ?? currentSessionType(), currentSessionType());
+$typeSessionActive = normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $showSectionBreakdown = sectionBreakdownEnabled($typeSessionActive);
 
 $sectionCounts = $sectionCounts ?? [];
@@ -15,14 +15,14 @@ $sections = $config['sections'] ?? $sectionConfig['sections'] ?? [];
 $rawSection = trim((string) ($_GET['section'] ?? ''));
 $currentSection = ($rawSection !== '' && ctype_digit($rawSection)) ? $rawSection : null;
 
-// ParamÃ¨tres de base pour les liens
+// Paramètres de base pour les liens
 $baseParams = [
     'page' => $pageName,
     'annee' => $anneeActive,
     'type_session' => $typeSessionActive,
 ];
 
-// Route de retour admin sÃ©curisÃ©e
+// Route de retour admin sécurisée
 $adminRoute = function_exists('defaultAdminRoute') 
     ? defaultAdminRoute(currentadminRole()) 
     : defaultadminRoute(currentadminRole());

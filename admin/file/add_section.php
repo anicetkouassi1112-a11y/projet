@@ -17,12 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Jeton CSRF invalide. Veuillez recharger la page.';
         $alertType = 'danger';
     } else {
-        $result = creerSection(
+        $ageMinValue = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
+        $ageMaxValue = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
+        $result = appContainer()->get(\Patro\Inscription\SectionService::class)->creerSection(
             $nomSection,
             $description,
             $genre,
-            $ageMin,
-            $ageMax
+            $ageMinValue === false ? 0 : (int) $ageMinValue,
+            $ageMaxValue === false ? 0 : (int) $ageMaxValue
         );
         $message = (string) ($result['message'] ?? '');
         $alertType = (string) ($result['alert_type'] ?? 'danger');
@@ -35,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Rechargement de la liste après traitement POST (sections mises à jour)
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 $sectionsByGenre = ['Garçon' => [], 'Fille' => []];
 foreach ($sections as $section) {
     $sectionGenre = normalizeGenre((string) ($section['genre'] ?? ''));

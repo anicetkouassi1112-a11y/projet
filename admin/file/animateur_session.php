@@ -4,17 +4,17 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
 
-$conn = getConnection();
 $animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
 $anneeActive = activeYearFromRequest();
 $typeSessionActive = activeSessionTypeFromRequest();
-$currentSessionId = ensureSession($anneeActive, $typeSessionActive);
+$currentSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
+    ->ensureSession($anneeActive, $typeSessionActive);
 $isScolaire = ($typeSessionActive === 'scolaire');
 
 $message = '';
 $alertType = 'success';
 
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {

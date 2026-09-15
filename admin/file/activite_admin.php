@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
+$activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
 
 // Fonction utilitaire locale pour les retours d'actions
 function handleActionResult(array $result): void
@@ -26,7 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $visible = isset($_POST['visible']);
             $description = appCleanText((string) ($_POST['description'] ?? ''), 5000);
 
-            $activitesExistantes = array_filter(getAllActiviteImages(), fn($img) => (int) ($img['ordre'] ?? 0) >= 6);
+            $activiteRepository->ensureSessionColumn();
+            $allImages = $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
+            $activitesExistantes = array_filter($allImages, fn($img) => (int) ($img['ordre'] ?? 0) >= 6);
             $ordreDejaPris = array_filter($activitesExistantes, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
             if ($ordreDejaPris !== []) {
@@ -50,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // ---------- Vérification de l'ordre (inchangée) ----------
             $activitesExistantes = array_filter(
-                getAllActiviteImages(),
+                $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()),
                 fn($img) => (int) ($img['ordre'] ?? 0) >= 6 && (int) $img['id'] !== $id
             );
             $ordreDejaPris = array_filter(
@@ -84,7 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $fichierValide = false;
                 }
                 // Récupérer l'ancien chemin pour suppression ultérieure
-                $oldData = getActiviteImageById($id); // fonction existante
+                $activiteRepository->ensureSessionColumn();
+                $oldData = $activiteRepository->findByIdAndSession(
+                    $id,
+                    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+                ) ?? [];
                 if ($oldData && !empty($oldData['image_path'])) {
                     $cheminAncien = resolveActiviteImagePath((string) $oldData['image_path']);
                 }
@@ -130,7 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirectTo(lien('activite_admin'));
 }
 
-$images = getAllActiviteImages();
+$activiteRepository->ensureSessionColumn();
+$images = $activiteRepository->findAllBySession(
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+);
 
 // N'affiche/gère ici que les images dont l'ordre est >= 6 (les ordres 0 à 5 sont réservés à la page d'accueil)
 $images = array_filter($images, fn($image) => (int) ($image['ordre'] ?? 0) >= 6);
@@ -224,7 +234,7 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $images);
                                             <input type="hidden" name="action" value="update_image">
                                             <input type="hidden" name="id" value="<?= e((int) $image['id']) ?>">
                                             <td>
-                                                <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Aperçu')) ?>" style="width: 90px; height: 65px; object-fit: cover; border-radius: 4px;">
+                                                <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Aperçu')) ?>" style="width: 90px; height: 65px; object-fit: cover; border-radius: 4px;">
                                             </td>
                                             <td>
                                                 <input type="text" class="form-control form-control-sm" name="titre" maxlength="255" value="<?= e((string) ($image['titre'] ?? '')) ?>">

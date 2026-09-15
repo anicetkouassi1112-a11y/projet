@@ -4,11 +4,15 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 $currentPage = 'accueil';
 $assetBase = app_url('Backend/Assets');
 $pageTitle = 'Accueil - Fun&Loisirs';
-$theme = getCurrentThemeTitle();
+$theme = appContainer()->get(\Patro\Inscription\ThemeService::class)->getCurrentThemeTitle();
 
 $activiteImages = [];
 try {
-    $activiteImages = getVisibleActiviteImages(); // triées par ordre ASC
+    $activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+    $activiteRepository->ensureSessionColumn();
+    $activiteImages = $activiteRepository->findVisibleBySession(
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+    );
 } catch (Throwable $e) {
     error_log('Accueil images error: ' . $e->getMessage());
 }
@@ -27,7 +31,7 @@ if (!function_exists('getActiviteImageByOrder')) {
     function getActiviteImageByOrder($ordre, $images, $fallback = '') {
         foreach ($images as $image) {
             if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-                return activiteImageUrl((int) $image['id']);
+                return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
             }
         }
         return $fallback;
@@ -106,7 +110,7 @@ $icons = ['bi-stars-fill', 'bi-lightning-fill', 'bi-shield-check', 'bi-trophy-fi
                     $index++;
                 ?>
                 <article class="fun-activity <?= e('tone-' . $tone) ?> reveal-item" data-reveal-index="<?= e($index) ?>">
-                    <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e($title) ?>" width="260" height="210" loading="lazy" decoding="async">
+                    <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e($title) ?>" width="260" height="210" loading="lazy" decoding="async">
                     <span class="activity-badge" aria-hidden="true"><i class="bi <?= e($icon) ?>"></i></span>
                     <h3><?= e($title) ?></h3>
                 </article>

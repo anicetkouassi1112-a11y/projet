@@ -85,15 +85,7 @@ if (!$idInscrit || $idInscrit <= 0) {
 }
 
 // 6. Récupérer les données de l'inscrit
-try {
-    $conn = getConnection();
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erreur de connexion a la base de donnees.']);
-    exit();
-}
-
-$existing = getInscritById((int) $idInscrit, $conn);
+$existing = appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)->findById((int) $idInscrit);
 if (!$existing) {
     http_response_code(404);
     echo json_encode(['success' => false, 'message' => 'Inscrit introuvable.']);
@@ -102,14 +94,14 @@ if (!$existing) {
 
 // 7. Vérifier que l'inscrit appartient à la session active
 $sessionId = (int) ($existing['id_session'] ?? 0);
-if ($sessionId !== getActiveAdminSessionId()) {
+if ($sessionId !== appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Vous ne pouvez modifier que les inscrits de la session active.']);
     exit();
 }
 
 // 8. Récupérer le type de session de l'inscrit
-$typeSession = (string) ($existing['type_session'] ?? currentSessionType());
+$typeSession = (string) ($existing['type_session'] ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 
 // 9. Récupérer et valider les champs modifiés
 $nom = appCleanText((string) ($payload['nom'] ?? ''), 120);
@@ -152,7 +144,8 @@ if ($age === null) {
     exit();
 }
 
-$section = findMatchingSection($genre, $dateNaissance, $annee, null, $typeSession);
+$section = appContainer()->get(\Patro\Inscription\SectionService::class)
+    ->findMatchingSection(normalizeGenre($genre), calculateAge($dateNaissance, $annee) ?? -1, $typeSession);
 if ($section === null && sectionBreakdownEnabled($typeSession)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);

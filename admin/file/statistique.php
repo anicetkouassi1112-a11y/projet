@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
 
 $anneeActive = displayYearFromRequest((int) date('Y'));
-$typeSessionActive = displaySessionTypeFromRequest(currentSessionType());
+$typeSessionActive = displaySessionTypeFromRequest(appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $anneeId = selectedYearId($anneeActive);
 $searchQuery = trim((string) ($_GET['search'] ?? ''));
 $sectionStats = [];
@@ -51,7 +51,7 @@ $garconPercent = (int) round(($totalGarcon / $genderTotal) * 100);
 $fillePercent = (int) round(($totalFille / $genderTotal) * 100);
 $pendingPercent = (int) round(($pendingCount / $totalDossiers) * 100);
 $validatedPercent = (int) round(($nombreTotal / $totalDossiers) * 100);
-$anneesDisponibles = getDistinctYears();
+$anneesDisponibles = appContainer()->get(\Patro\Inscription\SessionService::class)->getDistinctYears();
 $sessionLabel = sessionTypeLabel($typeSessionActive);
 $pageTitle = 'Statistiques - ' . $anneeActive . ' - ' . $sessionLabel;
 $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');

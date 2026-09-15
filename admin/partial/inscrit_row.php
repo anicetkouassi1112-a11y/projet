@@ -30,7 +30,7 @@ if (!empty($dateNaissance)) {
 
 // Droits et affichage de la colonne section
 $canManageInscrits = $canManageInscrits ?? adminHasRole(['directeur']);
-$typeSessionActive = $typeSessionActive ?? currentSessionType();
+$typeSessionActive = $typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
 $showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive);
 
 // Numéro de ligne
@@ -39,7 +39,7 @@ $rowNumber++;
 $currentRowNumber = $rowNumber;
 
 // Vérification de la session active
-$activeSessionId = getActiveAdminSessionId(); // fonction à ajouter dans functions.php
+$activeSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(); // fonction à ajouter dans functions.php
 $isActiveSession = ($idSessionInscrit === $activeSessionId);
 
 // Construction du chemin vers le PDF – utilisation de app_url() pour une URL fiable

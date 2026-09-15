@@ -38,7 +38,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $admin = currentadmin();
                 $expiration = $dateExpiration !== '' ? $dateExpiration . ' 23:59:59' : null;
-                $result = createAnimateurCodes((int) $idSession, (int) ($admin['id_admin'] ?? 0), (int) $quantite, $expiration);
+                $result = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class)->execute(
+                    new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
+                        (int) $idSession,
+                        (int) ($admin['id_admin'] ?? 0),
+                        (int) $quantite,
+                        $expiration,
+                        $currentSessionId,
+                        app_int('ANIMATEUR_CODE_LENGTH', 10)
+                    )
+                );
                 $message = (string) ($result['message'] ?? '');
                 $alertType = !empty($result['success']) ? 'success' : 'danger';
             }
@@ -76,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $alertType = $deleted ? 'success' : 'warning';
             }
         } elseif ($action === 'block_unregistered') {
-            $blocked = blockAnimateursNotRegistered($currentSessionId, $conn);
-            $message = $blocked . ' animateur(s) bloque(s) pour ' . sessionLabelById($currentSessionId, $conn) . '.';
+            $blocked = $animateurRepository->blockNotRegistered($currentSessionId);
+            $message = $blocked . ' animateur(s) bloque(s) pour ' . $sessionService->sessionLabelById($currentSessionId) . '.';
         } elseif ($action === 'unblock_animateur') {
             $idAnimateur = filter_var($_POST['id_animateur'] ?? null, FILTER_VALIDATE_INT);
             if (!$idAnimateur) {
@@ -92,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 $filterSection = filter_var($_GET['id_section'] ?? null, FILTER_VALIDATE_INT) ?: 0;
 $filterStatut = (string) ($_GET['statut'] ?? '');
 if (!in_array($filterStatut, ['', 'actif', 'bloque'], true)) {

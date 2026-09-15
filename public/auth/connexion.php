@@ -38,7 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             $password = (string) ($_POST['password'] ?? '');
-            $result = loginAnimateur($nom_a, $password);
+            $result = appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class)
+                ->execute(
+                    $nom_a,
+                    $password,
+                    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+                );
 
             if (empty($result['success'])) {
                 $message = (string) ($result['message'] ?? 'Identifiants incorrects.');

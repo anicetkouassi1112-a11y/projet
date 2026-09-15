@@ -3,8 +3,10 @@
 require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
+$activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
 
-$currentSessionId = ensureSession($anneeActive, $typeSessionActive, $conn);
+$currentSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
+    ->ensureSession($anneeActive, $typeSessionActive);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {
@@ -17,7 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add_theme') {
         $titre = appCleanText((string) ($_POST['titre'] ?? ''), 100);
         $sessionId = filter_var($_POST['session_id'] ?? 0, FILTER_VALIDATE_INT);
-        $result = Addtheme($titre, $sessionId === false ? 0 : (int) $sessionId);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->addTheme(
+            $titre,
+            $sessionId === false ? 0 : (int) $sessionId
+        );
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')
@@ -26,14 +31,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
         $titre = appCleanText((string) ($_POST['titre'] ?? ''), 100);
         $sessionId = filter_var($_POST['session_id'] ?? 0, FILTER_VALIDATE_INT);
-        $result = updateTheme((int) $id, $titre, $sessionId === false ? 0 : (int) $sessionId);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->updateTheme(
+            (int) $id,
+            $titre,
+            $sessionId === false ? 0 : (int) $sessionId
+        );
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')
         );
     } elseif ($action === 'delete_theme') {
         $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
-        $result = deleteTheme((int) $id);
+        $result = appContainer()->get(\Patro\Inscription\ThemeService::class)->deleteTheme((int) $id);
         setFlashMessage(
             !empty($result['success']) ? 'success' : (string) ($result['alert_type'] ?? 'danger'),
             (string) ($result['message'] ?? '')
@@ -44,7 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ordre = $ordre === false ? 0 : max(0, min(5, (int) $ordre));
         $visible = isset($_POST['visible']) && $_POST['visible'] === '1';
 
-        $imagesExistantes = array_filter(getAllActiviteImages(), fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
+        $activiteRepository->ensureSessionColumn();
+        $allImages = $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
+        $imagesExistantes = array_filter($allImages, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
 
         $ordreDejaPris = array_filter($imagesExistantes, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
@@ -63,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ordre = $ordre === false ? 0 : max(0, min(5, (int) $ordre));
         $visible = isset($_POST['visible']) && $_POST['visible'] === '1';
 
-        $autresImages = array_filter(getAllActiviteImages(), fn($img) => (int) $img['id'] !== (int) $id && (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
+        $autresImages = array_filter($allImages ?? [], fn($img) => (int) $img['id'] !== (int) $id && (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
         $ordreDejaPris = array_filter($autresImages, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
         
@@ -82,10 +93,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirectTo(lien('accueil_admin'));
 }
 
-$images = getAllActiviteImages();
+$activiteRepository->ensureSessionColumn();
+$images = $activiteRepository->findAllBySession(
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+);
 $imagesAccueil = array_filter($images, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
-$themes = getAllThemes();
-$sessions = getAllSessions();
+$themes = appContainer()->get(\Patro\Inscription\ThemeService::class)->getAllThemes();
+$sessions = appContainer()->get(\Patro\Inscription\SessionService::class)->getAllSessions();
 $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccueil);
 ?>
 <div class="container-fluid home-shell">
@@ -119,8 +133,9 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccue
                             <?php
                             // Récupérer la session par défaut pour l'année active
                             // On utilise la fonction ensureSession avec le type de session courant (par défaut)
-                            $defaultSessionType = currentSessionType(); // ou une valeur fixe selon votre logique
-                            $defaultSessionId = ensureSession($anneeActive, $defaultSessionType);
+                            $defaultSessionType = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(); // ou une valeur fixe selon votre logique
+                            $defaultSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
+                                ->ensureSession($anneeActive, $defaultSessionType);
 
                             // On peut aussi rechercher dans $sessions pour avoir le libellé
                             $activeSession = null;
@@ -222,7 +237,7 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccue
                                             <input type="hidden" name="action" value="update_image">
                                             <input type="hidden" name="id" value="<?= e((int) $image['id']) ?>">
                                             <td>
-                                                <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Apercu')) ?>" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                                <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Apercu')) ?>" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px;">
                                             </td>
                                             <td>
                                                 <input type="text" class="form-control form-control-sm" name="titre" maxlength="255" value="<?= e((string) ($image['titre'] ?? '')) ?>">

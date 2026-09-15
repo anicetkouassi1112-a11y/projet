@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../Backend/utilitaire.php';
 
-$inscriptionsOuvertes = inscriptionsOpen();
+$configuration = appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class);
+$inscriptionsOuvertes = $configuration->registrationsOpen();
 $message = '';
 $alertType = '';
 $nom = input('nom');
@@ -15,20 +16,20 @@ $adresse = input('adresse');
 $genre = input('genre');
 $prix = input('prix');
 $tailleTeeShirt = input('taille_tee_shirt');
-$typeSessionActuel = currentSessionType();
-$montantBase = inscriptionBaseAmount();
-$prixTeeShirt = teeShirtPrice();
+$typeSessionActuel = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
+$montantBase = $configuration->registrationAmount();
+$prixTeeShirt = $configuration->teeShirtPrice();
 $montantAvecTeeShirt = $montantBase + $prixTeeShirt;
 
 // Rediriger si inscriptions fermees
 if (!$inscriptionsOuvertes) {
-    $closedMessage = inscriptionClosedMessage();
+    $closedMessage = $configuration->registrationClosedMessage();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Empêcher l'inscription si inscriptions fermées
     if (!$inscriptionsOuvertes) {
-        $message = inscriptionClosedMessage();
+        $message = $configuration->registrationClosedMessage();
         $alertType = 'warning';
     } else {
         // Validation CSRF
@@ -101,7 +102,7 @@ $assetBase = app_url('Backend/Assets');
         <?php if (!$inscriptionsOuvertes): ?>
             <div class="alert alert-warning">
                 <strong>Inscriptions fermees</strong><br>
-                <?= e(inscriptionClosedMessage()) ?>
+                <?= e($configuration->registrationClosedMessage()) ?>
             </div>
         <?php elseif ($message !== ''): ?>
             <div class="alert alert-<?= e($alertType === 'error' ? 'danger' : $alertType) ?>">

@@ -361,23 +361,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['adpro']
 }
 
 /**
- * Établit et retourne une connexion PDO à la base de données
- * Utilise le pattern Singleton pour éviter les connexions multiples
- * 
- * @return PDO Instance de connexion à la base de données
- * @throws PDOException En cas d'erreur de connexion
- */
-function getConnection(): PDO
-{
-    $container = $GLOBALS['patro_container'] ?? null;
-    if ($container instanceof \Patro\Shared\Container && $container->has(PDO::class)) {
-        return $container->get(PDO::class);
-    }
-
-    throw new RuntimeException('Connexion PDO non enregistrée dans le conteneur Patro.');
-}
-
-/**
  * Vérifie que l'utilisateur admin est connecté, sinon redirige vers la page de login
  * 
  * @param string $loginUrl URL de redirection si non connecté
@@ -654,176 +637,9 @@ function normalizeTeeShirtSize(?string $size): string
 }
 
 // ===== CONFIGURATIONS GLOBALES =====
-function getConfig(string $key, ?string $default = null): ?string
-{
-    try {
-        return appContainer()
-            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
-            ->find($key, $default);
-    } catch (PDOException $e) {
-        error_log('Get config error: ' . $e->getMessage());
-        return $default;
-    }
-}
-
-function getConfigAmount(string $key, int $default = 0): int
-{
-    $value = getConfig($key, (string) $default);
-    $amount = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-
-    return $amount === false ? $default : (int) $amount;
-}
-
-function inscriptionBaseAmount(): int
-{
-    return getConfigAmount('inscription_montant', 500);
-}
-
-function teeShirtPrice(): int
-{
-    return getConfigAmount('tee_shirt_prix', 500);
-}
-
 function formatFcfa(int $amount): string
 {
     return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
-}
-
-function setConfig(string $key, ?string $value): bool
-{
-    try {
-        appContainer()
-            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
-            ->save($key, $value);
-        return true;
-    } catch (PDOException $e) {
-        error_log('Set config error: ' . $e->getMessage());
-        return false;
-    }
-}
-
-// Cree ou retrouve la session SQL correspondant a l annee et au type actifs.
-function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->ensureSession($anneeVal, $typeSession);
-}
-
-function sessionLabelById(int $idSession, ?PDO $connect = null): string
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->sessionLabelById($idSession);
-}
-
-function getAllSessions(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAllSessions();
-}
-
-function getAllSections(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->getAllSections();
-}
-
-function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->sectionIntervalOverlap($genre, $ageMin, $ageMax);
-}
-
-function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
-{
-    $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-    $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->creerSection(
-            $nomSection,
-            $description,
-            $genre,
-            $ageMin === false ? 0 : (int) $ageMin,
-            $ageMax === false ? 0 : (int) $ageMax
-        );
-}
-
-function Addtheme(string $titre, int $sessionId): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->addTheme($titre, $sessionId);
-}
-
-function getAllThemes(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->getAllThemes();
-}
-
-function getCurrentThemeTitle(?PDO $connect = null): string
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->getCurrentThemeTitle();
-}
-
-function updateTheme(int $id, string $titre, int $sessionId): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->updateTheme($id, $titre, $sessionId);
-}
-
-function deleteTheme(int $id): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->deleteTheme($id);
-}
-
-// Genere des codes a usage unique pour une session, sans attribution de section.
-function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?string $dateExpiration = null): array
-{
-    requireCsrfToken();
-    $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
-    return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
-        $idSession,
-        $idAdmin,
-        $quantite,
-        $dateExpiration,
-        getActiveAdminSessionId(),
-        app_int('ANIMATEUR_CODE_LENGTH', 10)
-    ));
-}
-
-// Consomme un code et cree ou reinscrit l animateur atomiquement.
-function registerAnimateurWithCode(string $code, string $nom, string $prenom, string $genre, string $tel, string $password, string $passwordConfirm): array
-{
-    requireCsrfToken();
-    return appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)->execute(
-        new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
-            $code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm, getActiveAdminSessionId()
-        )
-    );
-}
-
-function loginAnimateur(string $nom_a, string $password): array
-{
-    return appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class)
-        ->execute($nom_a, $password, getActiveAdminSessionId());
-}
-// Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
-function blockAnimateursNotRegistered(int $idSession, ?PDO $connect = null): int
-{
-    return appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class)
-        ->blockNotRegistered($idSession);
 }
 
 function validSessionTypes(): array
@@ -842,91 +658,14 @@ function sessionTypeLabel(?string $type): string
     return normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
 }
 
-function currentSessionType(): string
-{
-    return normalizeSessionType(getConfig('inscription_type_session', 'scolaire'));
-}
-
 function sectionBreakdownEnabled(?string $typeSession = null): bool
 {
-    return normalizeSessionType($typeSession, currentSessionType()) !== 'scolaire';
+    return normalizeSessionType(
+        $typeSession,
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()
+    ) !== 'scolaire';
 }
 
-function getConfigDateDebut(): ?string
-{
-    return getConfig('inscription_date_debut');
-}
-
-function getConfigDateFin(): ?string
-{
-    return getConfig('inscription_date_fin');
-}
-
-function inscriptionForceFerme(): bool
-{
-    return getConfig('inscription_force_ferme', 'off') === 'on';
-}
-
-/**
- * Vérifie si les inscriptions sont ouvertes (selon la date ET le forçage)
- */
-function inscriptionsOpen(): bool
-{
-    // Si forçage actif, c'est fermé
-    if (inscriptionForceFerme()) {
-        return false;
-    }
-
-    $debut = getConfigDateDebut();
-    $fin = getConfigDateFin();
-
-    // Sans période définie, c'est ouvert
-    if (!$debut && !$fin) {
-        return true;
-    }
-
-    $aujourdhui = date('Y-m-d');
-
-    // Période complète
-    if ($debut && $fin) {
-        return $aujourdhui >= $debut && $aujourdhui <= $fin;
-    }
-
-    // Only debut
-    if ($debut) {
-        return $aujourdhui >= $debut;
-    }
-
-    // Only fin
-    if ($fin) {
-        return $aujourdhui <= $fin;
-    }
-
-    return true;
-}
-
-/**
- * Message si inscriptions fermées
- */
-function inscriptionClosedMessage(): string
-{
-    $debut = getConfigDateDebut();
-    $fin = getConfigDateFin();
-
-    if (inscriptionForceFerme()) {
-        return 'Les inscriptions sont actuellement fermees. Veuillez contacter l\'administrateur.';
-    }
-
-    if ($debut && $fin) {
-        return sprintf(
-            'Les inscriptions sont ouvertes du %s au %s.',
-            date('d/m/Y', strtotime($debut)),
-            date('d/m/Y', strtotime($fin))
-        );
-    }
-
-    return 'Les inscriptions sont fermees.';
-}
 
 function calculateAge(string $dateNaissance, ?int $referenceYear = null): ?int
 {
@@ -940,44 +679,6 @@ function calculateAge(string $dateNaissance, ?int $referenceYear = null): ?int
     } catch (Throwable $e) {
         return null;
     }
-}
-
-function findMatchingSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?PDO $connect = null, ?string $typeSession = null): ?array
-{
-    $genre = normalizeGenre($genre);
-    if (!in_array($genre, validGenres(), true)) {
-        return null;
-    }
-
-    $age = calculateAge($dateNaissance, $referenceYear);
-    if ($age === null) {
-        return null;
-    }
-
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->findMatchingSection($genre, $age, $typeSession);
-}
-
-function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->ensureAnnee($anneeVal);
-}
-
-function getDistinctYears(): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getDistinctYears();
-}
-
-function getInscritById(int $idInscrit, ?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findById($idInscrit);
 }
 
 function canAccessPublicInscrit(int $idInscrit): bool
@@ -1096,13 +797,15 @@ function enregistrerInscrit(
     ?int $annee = null
 ): array {
     requireCsrfToken();
-    $typeSession = currentSessionType();
+    $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
 
     return appContainer()->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute(
         new \Patro\Application\Inscription\EnregistrerInscritCommand(
             $nom, $prenom, $dateNaissance, $genre, $tel, $adresse, $prixChoisi,
             $tailleTeeShirt, $annee ?: (int) date('Y'), $typeSession,
-            inscriptionBaseAmount(), teeShirtPrice(), sectionBreakdownEnabled($typeSession),
+            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->registrationAmount(),
+            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->teeShirtPrice(),
+            sectionBreakdownEnabled($typeSession),
             app_int('IDENTIFIANT_ORDER_DIGITS', 3)
         )
     );
@@ -1117,13 +820,6 @@ function nextRegistrationStepUrl(int $idInscrit): string
  * La session active est définie par : année courante + type_session issu de la config.
  * Toute modification ne doit s'appliquer qu'à cette session.
  */
-function getActiveAdminSessionId(): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getActiveAdminSessionId();
-}
-
 
 /**
  * Récupère l'URL d'une image d'activité en fonction de son ordre.
@@ -1136,7 +832,7 @@ function getActiviteImageByOrder(int $ordre, array $images, string $fallback = '
 {
     foreach ($images as $image) {
         if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-            return activiteImageUrl((int) $image['id']);
+            return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
         }
     }
     return $fallback;

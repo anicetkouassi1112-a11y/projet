@@ -56,12 +56,12 @@ function cinetpayInitiatePayment(int $idInscrit): array
     return cinetpayService()->initiatePayment($idInscrit);
 }
 
-function cinetpayFindTransaction(string $transactionId, ?PDO $conn = null): array
+function cinetpayFindTransaction(string $transactionId): array
 {
     return cinetpayService()->findTransaction($transactionId);
 }
 
-function cinetpayUpdateTransaction(PDO $conn, string $transactionId, array $values): void
+function cinetpayUpdateTransaction(string $transactionId, array $values): void
 {
     cinetpayService()->updateTransaction($transactionId, $values);
 }
