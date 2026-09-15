@@ -703,14 +703,14 @@ function setConfig(string $key, ?string $value): bool
 }
 
 // Cree ou retrouve la session SQL correspondant a l annee et au type actifs.
-function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null): int
+function ensureSession(int $anneeVal, string $typeSession): int
 {
     return appContainer()
         ->get(\Patro\Inscription\SessionService::class)
         ->ensureSession($anneeVal, $typeSession);
 }
 
-function sessionLabelById(int $idSession, ?PDO $connect = null): string
+function sessionLabelById(int $idSession): string
 {
     return appContainer()
         ->get(\Patro\Inscription\SessionService::class)
@@ -799,7 +799,7 @@ function loginAnimateur(string $nom_a, string $password): array
         ->execute($nom_a, $password, getActiveAdminSessionId());
 }
 // Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
-function blockAnimateursNotRegistered(int $idSession, ?PDO $connect = null): int
+function blockAnimateursNotRegistered(int $idSession): int
 {
     return appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class)
         ->blockNotRegistered($idSession);

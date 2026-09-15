@@ -76,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $alertType = $deleted ? 'success' : 'warning';
             }
         } elseif ($action === 'block_unregistered') {
-            $blocked = blockAnimateursNotRegistered($currentSessionId, $conn);
-            $message = $blocked . ' animateur(s) bloque(s) pour ' . sessionLabelById($currentSessionId, $conn) . '.';
+            $blocked = $animateurRepository->blockNotRegistered($currentSessionId);
+            $message = $blocked . ' animateur(s) bloque(s) pour ' . $sessionService->sessionLabelById($currentSessionId) . '.';
         } elseif ($action === 'unblock_animateur') {
             $idAnimateur = filter_var($_POST['id_animateur'] ?? null, FILTER_VALIDATE_INT);
             if (!$idAnimateur) {

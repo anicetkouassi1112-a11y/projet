@@ -4,7 +4,8 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
 
-$currentSessionId = ensureSession($anneeActive, $typeSessionActive, $conn);
+$currentSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
+    ->ensureSession($anneeActive, $typeSessionActive);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {

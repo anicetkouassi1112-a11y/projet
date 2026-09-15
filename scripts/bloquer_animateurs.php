@@ -33,10 +33,11 @@ if ($daysAfterOpen !== null && !$force) {
 }
 
 try {
-    $conn = getConnection();
-    $idSession = ensureSession($annee, $typeSession, $conn);
-    $blocked = blockAnimateursNotRegistered($idSession, $conn);
-    fwrite(STDOUT, $blocked . " animateur(s) bloque(s) pour " . sessionLabelById($idSession, $conn) . ".\n");
+    $sessionService = appContainer()->get(\Patro\Inscription\SessionService::class);
+    $animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
+    $idSession = $sessionService->ensureSession($annee, $typeSession);
+    $blocked = $animateurRepository->blockNotRegistered($idSession);
+    fwrite(STDOUT, $blocked . " animateur(s) bloque(s) pour " . $sessionService->sessionLabelById($idSession) . ".\n");
     exit(0);
 } catch (Throwable $e) {
     error_log('CLI block animateurs error: ' . $e->getMessage());
