@@ -361,23 +361,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['adpro']
 }
 
 /**
- * Établit et retourne une connexion PDO à la base de données
- * Utilise le pattern Singleton pour éviter les connexions multiples
- * 
- * @return PDO Instance de connexion à la base de données
- * @throws PDOException En cas d'erreur de connexion
- */
-function getConnection(): PDO
-{
-    $container = $GLOBALS['patro_container'] ?? null;
-    if ($container instanceof \Patro\Shared\Container && $container->has(PDO::class)) {
-        return $container->get(PDO::class);
-    }
-
-    throw new RuntimeException('Connexion PDO non enregistrée dans le conteneur Patro.');
-}
-
-/**
  * Vérifie que l'utilisateur admin est connecté, sinon redirige vers la page de login
  * 
  * @param string $loginUrl URL de redirection si non connecté
