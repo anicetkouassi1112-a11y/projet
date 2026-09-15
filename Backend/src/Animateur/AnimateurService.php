@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Patro\Animateur;
 
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Animateur\Repository\AnimateurRepository;
 use Patro\Http\SessionManager;
 use Patro\Security\CsrfProtection;
@@ -23,14 +22,13 @@ class AnimateurService
     private SessionManager $session;
 
     public function __construct(
-        private ?PDO $connection = null,
-        ?AnimateurRepository $repository = null,
-        ?SessionManager $session = null
+        private PDO $connection,
+        AnimateurRepository $repository,
+        SessionManager $session
     )
     {
-        $this->connection ??= DatabaseConnection::getConnection();
-        $this->repository = $repository ?? new AnimateurRepository($this->connection);
-        $this->session = $session ?? new SessionManager();
+        $this->repository = $repository;
+        $this->session = $session;
     }
 
     /**

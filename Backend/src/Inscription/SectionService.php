@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Patro\Inscription;
 
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Inscription\Repository\SectionRepository;
 use PDO;
 use PDOException;
@@ -18,10 +17,10 @@ class SectionService
     private PDO $connection;
     private SectionRepository $repository;
 
-    public function __construct(?PDO $connection = null, ?SectionRepository $repository = null)
+    public function __construct(PDO $connection, SectionRepository $repository)
     {
-        $this->connection = $connection ?? DatabaseConnection::getConnection();
-        $this->repository = $repository ?? new SectionRepository($this->connection);
+        $this->connection = $connection;
+        $this->repository = $repository;
     }
 
     /**
