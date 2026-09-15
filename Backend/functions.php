@@ -642,53 +642,6 @@ function formatFcfa(int $amount): string
     return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
 }
 
-function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
-{
-    $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-    $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->creerSection(
-            $nomSection,
-            $description,
-            $genre,
-            $ageMin === false ? 0 : (int) $ageMin,
-            $ageMax === false ? 0 : (int) $ageMax
-        );
-}
-
-// Genere des codes a usage unique pour une session, sans attribution de section.
-function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?string $dateExpiration = null): array
-{
-    requireCsrfToken();
-    $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
-    return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
-        $idSession,
-        $idAdmin,
-        $quantite,
-        $dateExpiration,
-        appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(),
-        app_int('ANIMATEUR_CODE_LENGTH', 10)
-    ));
-}
-
-// Consomme un code et cree ou reinscrit l animateur atomiquement.
-function registerAnimateurWithCode(string $code, string $nom, string $prenom, string $genre, string $tel, string $password, string $passwordConfirm): array
-{
-    requireCsrfToken();
-    return appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)->execute(
-        new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
-            $code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
-        )
-    );
-}
-
-function loginAnimateur(string $nom_a, string $password): array
-{
-    return appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class)
-        ->execute($nom_a, $password, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
-}
-// Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
 function validSessionTypes(): array
 {
     return ['scolaire', 'vacance'];

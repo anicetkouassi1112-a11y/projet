@@ -38,7 +38,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $admin = currentadmin();
                 $expiration = $dateExpiration !== '' ? $dateExpiration . ' 23:59:59' : null;
-                $result = createAnimateurCodes((int) $idSession, (int) ($admin['id_admin'] ?? 0), (int) $quantite, $expiration);
+                $result = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class)->execute(
+                    new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
+                        (int) $idSession,
+                        (int) ($admin['id_admin'] ?? 0),
+                        (int) $quantite,
+                        $expiration,
+                        $currentSessionId,
+                        app_int('ANIMATEUR_CODE_LENGTH', 10)
+                    )
+                );
                 $message = (string) ($result['message'] ?? '');
                 $alertType = !empty($result['success']) ? 'success' : 'danger';
             }
