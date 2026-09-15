@@ -31,7 +31,7 @@ if (!function_exists('getActiviteImageByOrder')) {
     function getActiviteImageByOrder($ordre, $images, $fallback = '') {
         foreach ($images as $image) {
             if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-                return activiteImageUrl((int) $image['id']);
+                return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
             }
         }
         return $fallback;
@@ -110,7 +110,7 @@ $icons = ['bi-stars-fill', 'bi-lightning-fill', 'bi-shield-check', 'bi-trophy-fi
                     $index++;
                 ?>
                 <article class="fun-activity <?= e('tone-' . $tone) ?> reveal-item" data-reveal-index="<?= e($index) ?>">
-                    <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e($title) ?>" width="260" height="210" loading="lazy" decoding="async">
+                    <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e($title) ?>" width="260" height="210" loading="lazy" decoding="async">
                     <span class="activity-badge" aria-hidden="true"><i class="bi <?= e($icon) ?>"></i></span>
                     <h3><?= e($title) ?></h3>
                 </article>

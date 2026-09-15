@@ -22,12 +22,6 @@ function activiteStorageDirectory(): string
     return $default;
 }
 
-function activiteImageUrl(int $id): string
-{
-    return app_url('public/media/activite.php') . '?' . http_build_query(['id' => $id]);
-}
-
-
 function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0, bool $visible = true, string $description = ''): array
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {

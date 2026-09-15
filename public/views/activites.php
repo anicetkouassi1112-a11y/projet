@@ -53,7 +53,7 @@ $toneIndex = 0;
             ?>
             <div class="activity-wrapper">
                 <article class="fun-activitie <?= e('tone-' . $tone) ?>">
-                    <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e($title) ?>" loading="lazy" decoding="async">
+                    <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e($title) ?>" loading="lazy" decoding="async">
                     <span class="activity-badge"><i class="bi <?= e($icon) ?>"></i></span>
                 </article>
                 <div class="activity-content">

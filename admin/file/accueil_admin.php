@@ -237,7 +237,7 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccue
                                             <input type="hidden" name="action" value="update_image">
                                             <input type="hidden" name="id" value="<?= e((int) $image['id']) ?>">
                                             <td>
-                                                <img src="<?= e(activiteImageUrl((int) $image['id'])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Apercu')) ?>" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                                <img src="<?= e(app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']])) ?>" alt="<?= e((string) ($image['titre'] ?? 'Apercu')) ?>" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px;">
                                             </td>
                                             <td>
                                                 <input type="text" class="form-control form-control-sm" name="titre" maxlength="255" value="<?= e((string) ($image['titre'] ?? '')) ?>">
