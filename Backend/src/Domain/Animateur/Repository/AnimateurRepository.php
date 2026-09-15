@@ -12,7 +12,7 @@ final class AnimateurRepository
     {
     }
 
-    public function updateSessionSection(int $animateurSessionId, int $sectionId, int $sessionId): bool
+    public function updateSessionSection(int $animateurSessionId, ?int $sectionId, int $sessionId): bool
     {
         $statement = $this->connection->prepare(
             'UPDATE animateur_session
@@ -26,6 +26,22 @@ final class AnimateurRepository
         ]);
 
         return $statement->rowCount() > 0;
+    }
+
+    /** @return array<string,mixed>|null */
+    public function findSessionAssignment(int $animateurId, int $sessionId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT ans.id_animateur_session, a.genre_a
+             FROM animateur_session ans
+             INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
+             WHERE ans.id_animateur = :animateur_id AND ans.id_session = :session_id
+             LIMIT 1'
+        );
+        $statement->execute([':animateur_id' => $animateurId, ':session_id' => $sessionId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     }
 
     public function sectionExists(int $sectionId): bool
