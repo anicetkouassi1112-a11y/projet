@@ -19,7 +19,6 @@ use Patro\Domain\Inscription\Repository\InscriptionRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
-use Patro\Animateur\AnimateurService;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
 use Patro\Application\Animateur\AuthentifierAnimateur;
@@ -51,11 +50,6 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(PdoConnectionFactory::class, static fn (): PdoConnectionFactory => new PdoConnectionFactory());
     $container->singleton(PDO::class, static fn (Container $container): PDO => $container->get(PdoConnectionFactory::class)->create());
     $container->singleton(PdoTransactionManager::class, static fn (Container $container): PdoTransactionManager => new PdoTransactionManager($container->get(PDO::class)));
-    $container->singleton(AnimateurService::class, static fn (Container $container): AnimateurService => new AnimateurService(
-        $container->get(PDO::class),
-        $container->get(AnimateurRepository::class),
-        $container->get(SessionManager::class)
-    ));
     $container->singleton(InscrireAnimateurParCode::class, static fn (Container $container): InscrireAnimateurParCode => new InscrireAnimateurParCode(
         $container->get(AnimateurRepository::class),
         $container->get(PdoTransactionManager::class)

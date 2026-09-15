@@ -467,41 +467,7 @@ function defaultadminRoute(?string $role = null): string
 
 function loginadmin(string $username, string $password): array
 {
-    if (class_exists('\Patro\Auth\AdminAuth')) {
-        return \Patro\Auth\AdminAuth::login($username, $password);
-    }
-    
-    $stmt = getConnection()->prepare('SELECT id_admin, username, password, role, created_at FROM admin WHERE username = :username LIMIT 1');
-    $stmt->execute([':username' => $username]);
-    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$admin || empty($admin['password'])) {
-        return [];
-    }
-
-    $storedPassword = (string) $admin['password'];
-    $passwordHashValid = password_verify($password, $storedPassword);
-    $legacyPasswordValid = !$passwordHashValid && hash_equals($storedPassword, md5($password));
-
-    if (!$passwordHashValid && !$legacyPasswordValid) {
-        return [];
-    }
-
-    if ($legacyPasswordValid) {
-        try {
-            $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $update = getConnection()->prepare('UPDATE admin SET password = :password WHERE id_admin = :id_admin');
-            $update->execute([
-                ':password' => $newHash,
-                ':id_admin' => (int) $admin['id_admin'],
-            ]);
-            $admin['password'] = $newHash;
-        } catch (PDOException $e) {
-            error_log('Password rehash error: ' . $e->getMessage());
-        }
-    }
-
-    return $admin;
+    return \Patro\Auth\AdminAuth::login($username, $password);
 }
 
 /**
@@ -691,15 +657,9 @@ function normalizeTeeShirtSize(?string $size): string
 function getConfig(string $key, ?string $default = null): ?string
 {
     try {
-        $container = $GLOBALS['patro_container'] ?? null;
-        if ($container instanceof \Patro\Shared\Container && $container->has(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)) {
-            return $container->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)->find($key, $default);
-        }
-
-        $stmt = getConnection()->prepare('SELECT config_value FROM configurations WHERE config_key = :key LIMIT 1');
-        $stmt->execute([':key' => $key]);
-        $value = $stmt->fetchColumn();
-        return $value === false ? $default : (string) $value;
+        return appContainer()
+            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
+            ->find($key, $default);
     } catch (PDOException $e) {
         error_log('Get config error: ' . $e->getMessage());
         return $default;
@@ -732,17 +692,9 @@ function formatFcfa(int $amount): string
 function setConfig(string $key, ?string $value): bool
 {
     try {
-        $container = $GLOBALS['patro_container'] ?? null;
-        if ($container instanceof \Patro\Shared\Container && $container->has(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)) {
-            $container->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)->save($key, $value);
-            return true;
-        }
-
-        $stmt = getConnection()->prepare(
-            'INSERT INTO configurations (config_key, config_value) VALUES (:key, :value)
-             ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)'
-        );
-        $stmt->execute([':key' => $key, ':value' => $value ?? '']);
+        appContainer()
+            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
+            ->save($key, $value);
         return true;
     } catch (PDOException $e) {
         error_log('Set config error: ' . $e->getMessage());
@@ -753,42 +705,9 @@ function setConfig(string $key, ?string $value): bool
 // Cree ou retrouve la session SQL correspondant a l annee et au type actifs.
 function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null): int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->ensureSession($anneeVal, $typeSession);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $typeSession = normalizeSessionType($typeSession);
-    $anneeId = ensureAnnee($anneeVal, $connect);
-
-    $stmt = $connect->prepare(
-        'INSERT INTO session (annee_id, type_session) VALUES (:annee_id, :type_session)
-         ON DUPLICATE KEY UPDATE type_session = VALUES(type_session)'
-    );
-    $stmt->execute([
-        ':annee_id' => $anneeId,
-        ':type_session' => $typeSession,
-    ]);
-
-    $select = $connect->prepare(
-        'SELECT id_session
-         FROM session
-         WHERE annee_id = :annee_id
-           AND type_session = :type_session
-         LIMIT 1'
-    );
-    $select->execute([
-        ':annee_id' => $anneeId,
-        ':type_session' => $typeSession,
-    ]);
-    $id = $select->fetchColumn();
-
-    if ($id === false) {
-        throw new RuntimeException('Session introuvable.');
-    }
-
-    return (int) $id;
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->ensureSession($anneeVal, $typeSession);
 }
 
 // Session animateur de reference pour les formulaires publics.
@@ -804,808 +723,139 @@ function currentAnimateurSessionId(?PDO $connect = null): int
 
 function sessionLabelById(int $idSession, ?PDO $connect = null): string
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->sessionLabelById($idSession);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT a.ans, s.type_session
-         FROM session s
-         INNER JOIN annee a ON a.idannee = s.annee_id
-         WHERE s.id_session = :id_session
-         LIMIT 1'
-    );
-    $stmt->execute([':id_session' => $idSession]);
-    $session = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$session) {
-        return 'Session inconnue';
-    }
-
-    return (string) $session['ans'] . ' - ' . sessionTypeLabel((string) $session['type_session']);
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->sessionLabelById($idSession);
 }
 
 function getAllSessions(?PDO $connect = null): array
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getAllSessions();
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->query(
-        'SELECT s.id_session, a.ans, s.type_session
-         FROM session s
-         INNER JOIN annee a ON a.idannee = s.annee_id
-         ORDER BY a.ans DESC, FIELD(s.type_session, "scolaire", "vacance") ASC'
-    );
-
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getAllSessions();
 }
 
 function getAllSections(?PDO $connect = null): array
 {
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        return $service->getAllSections();
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->query(
-        'SELECT id_section, nom_section, description, genre, age_min, age_max
-         FROM section
-         ORDER BY genre ASC, age_min ASC, age_max ASC, nom_section ASC'
-    );
-
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->getAllSections();
 }
 
 function nomSectionExiste(string $nom, ?PDO $connect = null): bool
 {
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        return $service->nomSectionExiste($nom);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare('SELECT COUNT(*) FROM section WHERE nom_section = :nom');
-    $stmt->execute([':nom' => $nom]);
-
-    return (int) $stmt->fetchColumn() > 0;
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->nomSectionExiste($nom);
 }
 
 function titreExiste(string $titre, ?PDO $connect = null, ?int $sessionId = null): bool
 {
     $sessionId = $sessionId ?: getActiveAdminSessionId();
-    $container = $GLOBALS['patro_container'] ?? null;
-    if ($connect === null && $container instanceof \Patro\Shared\Container && $container->has(\Patro\Domain\Inscription\Repository\ThemeRepository::class)) {
-        return $container->get(\Patro\Domain\Inscription\Repository\ThemeRepository::class)->existsByTitle($titre, $sessionId);
-    }
-
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare('SELECT COUNT(*) FROM themes WHERE titre = :titre AND session_id = :session_id');
-    $stmt->execute([
-        ':titre' => $titre,
-        ':session_id' => $sessionId,
-    ]);
-
-    return (int) $stmt->fetchColumn() > 0;
+    return appContainer()
+        ->get(\Patro\Domain\Inscription\Repository\ThemeRepository::class)
+        ->existsByTitle($titre, $sessionId);
 }
 function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
 {
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        return $service->sectionIntervalOverlap($genre, $ageMin, $ageMax);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT id_section, nom_section, age_min, age_max
-         FROM section
-         WHERE genre = :genre
-           AND age_min <= :age_max
-           AND age_max >= :age_min
-         ORDER BY age_min ASC, age_max ASC
-         LIMIT 1'
-    );
-    $stmt->execute([
-        ':genre' => $genre,
-        ':age_min' => $ageMin,
-        ':age_max' => $ageMax,
-    ]);
-
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->sectionIntervalOverlap($genre, $ageMin, $ageMax);
 }
 
 function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
 {
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-        $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-        $ageMin = $ageMin === false ? 0 : (int) $ageMin;
-        $ageMax = $ageMax === false ? 0 : (int) $ageMax;
-        return $service->creerSection($nomSection, $description, $genre, $ageMin, $ageMax);
-    }
-    
-    requireCsrfToken();
-    
-    $nomSection = appCleanText($nomSection, 100);
-    $description = appCleanText($description, 255);
-    $genre = normalizeGenre($genre);
     $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
     $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-
-    if ($nomSection === '') {
-        return ['success' => false, 'message' => 'Le nom de la section est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if (!in_array($genre, validGenres(), true)) {
-        return ['success' => false, 'message' => 'Le genre de la section est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if ($ageMin === false || $ageMax === false) {
-        return ['success' => false, 'message' => 'Les ages minimum et maximum sont obligatoires.', 'alert_type' => 'warning'];
-    }
-
-    $ageMin = (int) $ageMin;
-    $ageMax = (int) $ageMax;
-
-    if ($ageMin > $ageMax) {
-        return ['success' => false, 'message' => 'L age minimum doit etre inferieur ou egal a l age maximum.', 'alert_type' => 'warning'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        if (nomSectionExiste($nomSection, $connect)) {
-            return ['success' => false, 'message' => 'Cette section existe deja.', 'alert_type' => 'warning'];
-        }
-
-        $overlap = sectionIntervalOverlap($genre, $ageMin, $ageMax, $connect);
-        if ($overlap) {
-            return [
-                'success' => false,
-                'message' => 'Chevauchement refuse: la section "' . (string) $overlap['nom_section'] . '" couvre deja les ages ' . (int) $overlap['age_min'] . '-' . (int) $overlap['age_max'] . ' pour ce genre.',
-                'alert_type' => 'warning',
-            ];
-        }
-
-        $stmt = $connect->prepare(
-            'INSERT INTO section (nom_section, description, genre, age_min, age_max)
-             VALUES (:nom_section, :description, :genre, :age_min, :age_max)'
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->creerSection(
+            $nomSection,
+            $description,
+            $genre,
+            $ageMin === false ? 0 : (int) $ageMin,
+            $ageMax === false ? 0 : (int) $ageMax
         );
-        $stmt->execute([
-            ':nom_section' => $nomSection,
-            ':description' => $description !== '' ? $description : null,
-            ':genre' => $genre,
-            ':age_min' => $ageMin,
-            ':age_max' => $ageMax,
-        ]);
-
-        return [
-            'success' => true,
-            'message' => 'Section "' . $nomSection . '" ajoutee avec succes.',
-            'alert_type' => 'success',
-            'id_section' => (int) $connect->lastInsertId(),
-        ];
-    } catch (PDOException $e) {
-        error_log('Create section error: ' . $e->getMessage());
-
-        if ($e->getCode() === '23000') {
-            return ['success' => false, 'message' => 'Cette section existe deja.', 'alert_type' => 'warning'];
-        }
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant l ajout de la section.', 'alert_type' => 'danger'];
-    }
 }
 
 function sessionExists(int $idSession, ?PDO $connect = null): bool
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->sessionExists($idSession);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare('SELECT COUNT(*) FROM session WHERE id_session = :id_session');
-    $stmt->execute([':id_session' => $idSession]);
-
-    return (int) $stmt->fetchColumn() > 0;
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->sessionExists($idSession);
 }
 
 function Addtheme(string $titre, int $sessionId): array
 {
-    if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
-        return $service->addTheme($titre, $sessionId);
-    }
-    
-    requireCsrfToken();
-    
-    if ($sessionId !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez ajouter un thème que pour la session active.', 'alert_type' => 'danger'];
-    }
-
-    $titre = appCleanText($titre, 100);
-
-    if ($titre === '') {
-        return ['success' => false, 'message' => 'Le nom du thme est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if ($sessionId <= 0) {
-        return ['success' => false, 'message' => 'Veuillez choisir une session pour ce thme.', 'alert_type' => 'warning'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        if (!sessionExists($sessionId, $connect)) {
-            return ['success' => false, 'message' => 'Session invalide.', 'alert_type' => 'danger'];
-        }
-
-        if (titreExiste($titre, $connect, $sessionId)) {
-            return ['success' => false, 'message' => 'Ce thme existe deja.', 'alert_type' => 'warning'];
-        }
-
-        $stmt = $connect->prepare(
-            'INSERT INTO themes (titre, session_id)
-             VALUES (:titre, :session_id)'
-        );
-        $stmt->execute([
-            ':titre' => $titre,
-            ':session_id' => $sessionId,
-        ]);
-
-        return [
-            'success' => true,
-            'message' => 'Le thme "' . $titre . '" a ete ajoute avec succes.',
-            'alert_type' => 'success',
-            'id_theme' => (int) $connect->lastInsertId(),
-        ];
-    } catch (PDOException $e) {
-        error_log('Add theme error: ' . $e->getMessage());
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant l ajout de ce thme.', 'alert_type' => 'danger'];
-    }
+    return appContainer()
+        ->get(\Patro\Inscription\ThemeService::class)
+        ->addTheme($titre, $sessionId);
 }
 
 function getAllThemes(?PDO $connect = null): array
 {
-    if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
-        return $service->getAllThemes();
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT t.id, t.titre, t.session_id, a.ans, s.type_session
-         FROM themes t
-         INNER JOIN session s ON s.id_session = t.session_id
-         INNER JOIN annee a ON a.idannee = s.annee_id
-         WHERE t.session_id = :session_id
-         ORDER BY t.titre ASC'
-    );
-    $stmt->execute([':session_id' => getActiveAdminSessionId()]);
-
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return appContainer()
+        ->get(\Patro\Inscription\ThemeService::class)
+        ->getAllThemes();
 }
 
 function getCurrentThemeTitle(?PDO $connect = null): string
 {
-    if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
-        return $service->getCurrentThemeTitle();
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT t.titre
-         FROM themes t
-         WHERE t.session_id = :session_id
-         ORDER BY t.titre ASC
-         LIMIT 1'
-    );
-    $stmt->execute([':session_id' => getActiveAdminSessionId()]);
-
-    $titre = $stmt->fetchColumn();
-
-    return $titre !== false ? (string) $titre : '';
+    return appContainer()
+        ->get(\Patro\Inscription\ThemeService::class)
+        ->getCurrentThemeTitle();
 }
 
 function updateTheme(int $id, string $titre, int $sessionId): array
 {
-    if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
-        return $service->updateTheme($id, $titre, $sessionId);
-    }
-    
-    requireCsrfToken();
-    
-    if ($sessionId !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez modifier un thème que pour la session active.', 'alert_type' => 'danger'];
-    }
-
-    $titre = appCleanText($titre, 100);
-
-    if ($id <= 0) {
-        return ['success' => false, 'message' => 'Thme invalide.', 'alert_type' => 'danger'];
-    }
-
-    if ($titre === '') {
-        return ['success' => false, 'message' => 'Le nom du thme est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if ($sessionId <= 0) {
-        return ['success' => false, 'message' => 'Veuillez choisir une session pour ce thme.', 'alert_type' => 'warning'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        if (!sessionExists($sessionId, $connect)) {
-            return ['success' => false, 'message' => 'Session invalide.', 'alert_type' => 'danger'];
-        }
-
-        $existsStmt = $connect->prepare('SELECT COUNT(*) FROM themes WHERE id = :id AND session_id = :session_id');
-        $existsStmt->execute([
-            ':id' => $id,
-            ':session_id' => getActiveAdminSessionId(),
-        ]);
-        if ((int) $existsStmt->fetchColumn() === 0) {
-            return ['success' => false, 'message' => 'Thme introuvable.', 'alert_type' => 'danger'];
-        }
-
-        $dupStmt = $connect->prepare('SELECT COUNT(*) FROM themes WHERE titre = :titre AND session_id = :session_id AND id != :id');
-        $dupStmt->execute([
-            ':titre' => $titre,
-            ':session_id' => $sessionId,
-            ':id' => $id,
-        ]);
-        if ((int) $dupStmt->fetchColumn() > 0) {
-            return ['success' => false, 'message' => 'Ce thme existe deja.', 'alert_type' => 'warning'];
-        }
-
-        $stmt = $connect->prepare(
-            'UPDATE themes SET titre = :titre WHERE id = :id AND session_id = :session_id'
-        );
-        $stmt->execute([
-            ':titre' => $titre,
-            ':session_id' => $sessionId,
-            ':id' => $id,
-        ]);
-
-        return ['success' => true, 'message' => 'Thme mis a jour avec succes.', 'alert_type' => 'success'];
-    } catch (PDOException $e) {
-        error_log('Update theme error: ' . $e->getMessage());
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant la mise a jour du thme.', 'alert_type' => 'danger'];
-    }
+    return appContainer()
+        ->get(\Patro\Inscription\ThemeService::class)
+        ->updateTheme($id, $titre, $sessionId);
 }
 
 function deleteTheme(int $id): array
 {
-    if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
-        return $service->deleteTheme($id);
-    }
-    
-    requireCsrfToken();
-    
-    if ($id <= 0) {
-        return ['success' => false, 'message' => 'Thme invalide.', 'alert_type' => 'danger'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        $stmt = $connect->prepare('DELETE FROM themes WHERE id = :id AND session_id = :session_id');
-        $stmt->execute([
-            ':id' => $id,
-            ':session_id' => getActiveAdminSessionId(),
-        ]);
-
-        if ($stmt->rowCount() === 0) {
-            return ['success' => false, 'message' => 'Thme introuvable.', 'alert_type' => 'warning'];
-        }
-
-        return ['success' => true, 'message' => 'Thme supprime avec succes.', 'alert_type' => 'success'];
-    } catch (PDOException $e) {
-        error_log('Delete theme error: ' . $e->getMessage());
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant la suppression du thme.', 'alert_type' => 'danger'];
-    }
-}
-
-function generateAnimateurCodeValue(int $length = 10): string
-{
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->generateAnimateurCodeValue($length);
-    }
-    
-    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    $max = strlen($alphabet) - 1;
-    $code = '';
-
-    for ($i = 0; $i < $length; $i++) {
-        $code .= $alphabet[random_int(0, $max)];
-    }
-
-    return $code;
-}
-
-function createUniqueAnimateurCode(PDO $connect, int $length = 10): string
-{
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->createUniqueAnimateurCode($connect, $length);
-    }
-    
-    for ($attempt = 0; $attempt < 10; $attempt++) {
-        $code = generateAnimateurCodeValue($length);
-        $stmt = $connect->prepare('SELECT COUNT(*) FROM code_inscription_animateur WHERE code = :code');
-        $stmt->execute([':code' => $code]);
-
-        if ((int) $stmt->fetchColumn() === 0) {
-            return $code;
-        }
-    }
-
-    throw new RuntimeException('Generation de code impossible.');
+    return appContainer()
+        ->get(\Patro\Inscription\ThemeService::class)
+        ->deleteTheme($id);
 }
 
 // Genere des codes a usage unique pour une session, sans attribution de section.
 function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?string $dateExpiration = null): array
 {
-    if (appContainer()->has(\Patro\Application\Animateur\GenererCodesAnimateur::class)) {
-        requireCsrfToken();
-        $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
-        return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
-            $idSession,
-            $idAdmin,
-            $quantite,
-            $dateExpiration,
-            getActiveAdminSessionId(),
-            app_int('ANIMATEUR_CODE_LENGTH', 10)
-        ));
-    }
-
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->createAnimateurCodes($idSession, $idAdmin, $quantite, $dateExpiration);
-    }
-    
     requireCsrfToken();
-    
-    if ($idSession !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez generer des codes que pour la session active.', 'codes' => []];
-    }
-
-    $quantite = max(1, min(100, $quantite));
-    $connect = getConnection();
-    $codes = [];
-
-    try {
-        $connect->beginTransaction();
-        $insert = $connect->prepare(
-            'INSERT INTO code_inscription_animateur (code, id_session, id_admin, date_expiration)
-             VALUES (:code, :id_session, :id_admin, :date_expiration)'
-        );
-
-        for ($i = 0; $i < $quantite; $i++) {
-            $code = createUniqueAnimateurCode($connect, app_int('ANIMATEUR_CODE_LENGTH', 10));
-            $insert->execute([
-                ':code' => $code,
-                ':id_session' => $idSession,
-                ':id_admin' => $idAdmin,
-                ':date_expiration' => $dateExpiration ?: null,
-            ]);
-            $codes[] = $code;
-        }
-
-        $connect->commit();
-        return ['success' => true, 'message' => count($codes) . ' code(s) genere(s).', 'codes' => $codes];
-    } catch (Throwable $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Create animateur codes error: ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Erreur pendant la generation des codes.', 'codes' => []];
-    }
+    $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
+    return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
+        $idSession,
+        $idAdmin,
+        $quantite,
+        $dateExpiration,
+        getActiveAdminSessionId(),
+        app_int('ANIMATEUR_CODE_LENGTH', 10)
+    ));
 }
 
 // Consomme un code et cree ou reinscrit l animateur atomiquement.
 function registerAnimateurWithCode(string $code, string $nom, string $prenom, string $genre, string $tel, string $password, string $passwordConfirm): array
 {
-    if (appContainer()->has(\Patro\Application\Animateur\InscrireAnimateurParCode::class)) {
-        requireCsrfToken();
-        $attempts = $_SESSION['animateur_code_attempts'] ?? ['count' => 0, 'locked_until' => 0];
-        if ((int) ($attempts['locked_until'] ?? 0) > time()) {
-            return ['success' => false, 'message' => 'Trop de tentatives. Veuillez patienter avant de reessayer.', 'alert_type' => 'danger'];
-        }
-        $service = appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class);
-        $result = $service->execute(new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
-            $code,
-            $nom,
-            $prenom,
-            $genre,
-            $tel,
-            $password,
-            $passwordConfirm,
-            getActiveAdminSessionId()
-        ));
-        if (!$result['success'] && ($result['message'] ?? '') === 'Code invalide ou deja utilise.') {
-            $count = (int) ($attempts['count'] ?? 0) + 1;
-            $_SESSION['animateur_code_attempts'] = [
-                'count' => $count,
-                'locked_until' => $count >= 8 ? time() + 600 : 0,
-            ];
-        } elseif ($result['success']) {
-            unset($_SESSION['animateur_code_attempts']);
-        }
-        return $result;
-    }
-
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->registerAnimateurWithCode($code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm);
-    }
-    
     requireCsrfToken();
-    
-    $code = strtoupper(appCleanText($code, 20));
-    $nom = appCleanText($nom, 120);
-    $prenom = appCleanText($prenom, 120);
-    $genre = normalizeAnimateurGenre($genre);
-    $tel = normalizeIvorianPhone($tel);
-
-    if ($code === '' || $nom === '' || $prenom === '' || $genre === ''|| $password === '' || $passwordConfirm === '') {
-        return ['success' => false, 'message' => 'Veuillez remplir tous les champs obligatoires.', 'alert_type' => 'warning'];
-    }
-
-    if (!isValidIvorianPhone($tel)) {
-        return ['success' => false, 'message' => 'Numero de telephone ivoirien invalide.', 'alert_type' => 'warning'];
-    }
-
-    if ($password !== $passwordConfirm) {
-        return ['success' => false, 'message' => 'Les mots de passe ne correspondent pas.', 'alert_type' => 'warning'];
-    }
-
-    if (strlen($password) < 8 || strlen($password) > 256) {
-        return ['success' => false, 'message' => 'Le mot de passe doit contenir au moins 8 caracteres.', 'alert_type' => 'warning'];
-    }
-
-    $attempts = $_SESSION['animateur_code_attempts'] ?? ['count' => 0, 'locked_until' => 0];
-    $lockedUntil = (int) ($attempts['locked_until'] ?? 0);
-    
-    if ($lockedUntil > time()) {
-        return ['success' => false, 'message' => 'Trop de tentatives. Veuillez patienter avant de reessayer.', 'alert_type' => 'danger'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        $connect->beginTransaction();
-
-        $currentSessionId = currentAnimateurSessionId($connect);
-        
-        $stmt = $connect->prepare(
-            'SELECT c.*
-             FROM code_inscription_animateur c
-             WHERE c.code = :code
-             LIMIT 1
-             FOR UPDATE'
-        );
-        $stmt->execute([':code' => $code]);
-        $codeRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$codeRow || (string) $codeRow['statut'] !== 'disponible') {
-            $connect->rollBack();
-            $_SESSION['animateur_code_attempts'] = [
-                'count' => ((int) ($attempts['count'] ?? 0)) + 1,
-                'locked_until' => ((int) ($attempts['count'] ?? 0)) + 1 >= 8 ? time() + 600 : 0,
-            ];
-            return ['success' => false, 'message' => 'Code invalide ou deja utilise.', 'alert_type' => 'danger'];
-        }
-
-        if (!empty($codeRow['date_expiration']) && strtotime((string) $codeRow['date_expiration']) < time()) {
-            $connect->rollBack();
-            return ['success' => false, 'message' => 'Ce code a expire. Veuillez demander un nouveau code.', 'alert_type' => 'warning'];
-        }
-
-        if ((int) $codeRow['id_session'] !== $currentSessionId) {
-            $connect->rollBack();
-            return ['success' => false, 'message' => 'Ce code ne correspond pas a la session en cours.', 'alert_type' => 'warning'];
-        }
-
-        // CORRECTION 1 : Ajout de la virgule entre genre_a et tel
-        $find = $connect->prepare('SELECT id_animateur, nom_a, prenom_a, genre_a, tel, password, statut, created_at, updated_at FROM animateur WHERE tel = :tel LIMIT 1 FOR UPDATE');
-        $find->execute([':tel' => $tel]);
-        $animateur = $find->fetch(PDO::FETCH_ASSOC);
-        $warning = '';
-        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-
-        if ($animateur) {
-            $idAnimateur = (int) $animateur['id_animateur'];
-            if (
-                identifierLookupKey((string) $animateur['nom_a']) !== identifierLookupKey($nom)
-                || identifierLookupKey((string) $animateur['prenom_a']) !== identifierLookupKey($prenom)
-            ) {
-                $warning = ' Le nom ou le prenom differe de la fiche existante.';
-            }
-
-            $update = $connect->prepare(
-                'UPDATE animateur
-                 SET nom_a = :nom,
-                     prenom_a = :prenom,
-                     genre_a = :genre,
-                     password = :password,
-                     statut = "actif"
-                 WHERE id_animateur = :id_animateur'
-            );
-            $update->execute([
-                ':nom' => $nom,
-                ':prenom' => $prenom,
-                ':genre' => $genre,
-                ':password' => $passwordHash,
-                ':id_animateur' => $idAnimateur,
-            ]);
-        } else {
-            // CORRECTION 2 : Ajout de :genre dans les VALUES
-            $insert = $connect->prepare(
-                'INSERT INTO animateur (nom_a, prenom_a, genre_a, tel, password, statut)
-                 VALUES (:nom, :prenom, :genre, :tel, :password, "actif")'
-            );
-            $insert->execute([
-                ':nom' => $nom,
-                ':prenom' => $prenom,
-                ':genre' => $genre,
-                ':tel' => $tel,
-                ':password' => $passwordHash,
-            ]);
-            $idAnimateur = (int) $connect->lastInsertId();
-        }
-
-        $sessionInsert = $connect->prepare(
-            'INSERT INTO animateur_session (id_animateur, id_session, id_code, id_section)
-             VALUES (:id_animateur, :id_session, :id_code, NULL)'
-        );
-        $sessionInsert->execute([
-            ':id_animateur' => $idAnimateur,
-            ':id_session' => (int) $codeRow['id_session'],
-            ':id_code' => (int) $codeRow['id_code'],
-        ]);
-
-        $consume = $connect->prepare(
-            'UPDATE code_inscription_animateur
-             SET statut = "utilise", id_animateur = :id_animateur, utilise_le = CURRENT_TIMESTAMP
-             WHERE id_code = :id_code'
-        );
-        $consume->execute([
-            ':id_animateur' => $idAnimateur,
-            ':id_code' => (int) $codeRow['id_code'],
-        ]);
-
-        $connect->commit();
-        unset($_SESSION['animateur_code_attempts']);
-
-        return [
-            'success' => true,
-            'message' => 'Votre enregistrement animateur est confirme.' . $warning,
-            'alert_type' => $warning === '' ? 'success' : 'warning',
-            'id_animateur' => $idAnimateur,
-        ];
-    } catch (PDOException $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Register animateur error: ' . $e->getMessage());
-
-        if ($e->getCode() === '23000') {
-            return ['success' => false, 'message' => 'Cet animateur est deja enregistre pour cette session.', 'alert_type' => 'warning'];
-        }
-
-        return ['success' => false, 'message' => 'Erreur pendant l enregistrement. Veuillez reessayer.', 'alert_type' => 'danger'];
-    } catch (Throwable $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Register animateur error: ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Erreur pendant l enregistrement. Veuillez reessayer.', 'alert_type' => 'danger'];
-    }
+    return appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)->execute(
+        new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
+            $code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm, getActiveAdminSessionId()
+        )
+    );
 }
 
 function loginAnimateur(string $nom_a, string $password): array
 {
-    if (appContainer()->has(\Patro\Application\Animateur\AuthentifierAnimateur::class)) {
-        $service = appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class);
-        return $service->execute($nom_a, $password, getActiveAdminSessionId());
-    }
-
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->loginAnimateur($nom_a, $password);
-    }
-    
-    $nom_a = appCleanText($nom_a, 120);
-    if ($nom_a === '' || $password === '') {
-        return ['success' => false, 'message' => 'Veuillez renseigner le nom et le mot de passe.'];
-    }
-
-    $connect = getConnection();
-    $currentSessionId = currentAnimateurSessionId($connect);
-    $stmt = $connect->prepare(
-        'SELECT a.*, ans.id_animateur_session, ans.id_session, ans.id_section,
-                sec.nom_section, sec.genre AS genre_section
-         FROM animateur a
-         INNER JOIN animateur_session ans
-            ON ans.id_animateur = a.id_animateur
-           AND ans.id_session = :id_session
-         LEFT JOIN section sec ON sec.id_section = ans.id_section
-         WHERE a.nom_a = :nom_a
-         LIMIT 1'
-    );
-    $stmt->execute([
-        ':nom_a' => $nom_a,
-        ':id_session' => $currentSessionId,
-    ]);
-    $animateur = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$animateur || empty($animateur['password'])) {
-        return ['success' => false, 'message' => 'Identifiants incorrects ou animateur non inscrit pour la session en cours.'];
-    }
-
-    $storedPassword = (string) $animateur['password'];
-    $passwordHashValid = password_verify($password, $storedPassword);
-    $legacyPasswordValid = !$passwordHashValid && hash_equals($storedPassword, md5($password));
-
-    if (!$passwordHashValid && !$legacyPasswordValid) {
-        return ['success' => false, 'message' => 'Identifiants incorrects.'];
-    }
-
-    if ($legacyPasswordValid) {
-        try {
-            $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $update = $connect->prepare('UPDATE animateur SET password = :password WHERE id_animateur = :id_animateur');
-            $update->execute([
-                ':password' => $newHash,
-                ':id_animateur' => (int) $animateur['id_animateur'],
-            ]);
-            $animateur['password'] = $newHash;
-        } catch (PDOException $e) {
-            error_log('Password rehash error (animateur): ' . $e->getMessage());
-        }
-    }
-
-    if ((string) $animateur['statut'] === 'bloque') {
-        return ['success' => false, 'message' => 'Votre compte animateur est bloque. Demandez un nouveau code a l administrateur pour la session en cours.'];
-    }
-
-    return ['success' => true, 'message' => 'Connexion reussie.', 'animateur' => $animateur];
+    return appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class)
+        ->execute($nom_a, $password, getActiveAdminSessionId());
 }
 // Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
 function blockAnimateursNotRegistered(int $idSession, ?PDO $connect = null): int
 {
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->blockAnimateursNotRegistered($idSession);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'UPDATE animateur a
-         SET a.statut = "bloque"
-         WHERE a.statut = "actif"
-           AND a.id_animateur NOT IN (
-             SELECT id_animateur FROM animateur_session WHERE id_session = :id_session
-           )'
-    );
-    $stmt->execute([':id_session' => $idSession]);
-
-    return $stmt->rowCount();
+    return appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class)
+        ->blockNotRegistered($idSession);
 }
 
 function validSessionTypes(): array
@@ -1736,33 +986,9 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
         return null;
     }
 
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        return $service->findMatchingSection($genre, $age, $typeSession);
-    }
-
-    // Session scolaire: pas de repartition par section, la section reste nulle (repartition par genre uniquement).
-    if (!sectionBreakdownEnabled($typeSession)) {
-        return null;
-    }
-
-    // Session vacance: repartition par section, croisee avec l'age.
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT id_section, nom_section, description, genre, age_min, age_max
-         FROM section
-         WHERE genre = :genre
-           AND :age BETWEEN age_min AND age_max
-         ORDER BY age_min ASC, age_max ASC, nom_section ASC
-         LIMIT 1'
-    );
-    $stmt->execute([
-        ':genre' => $genre,
-        ':age' => $age,
-    ]);
-
-    $section = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $section ?: null;
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->findMatchingSection($genre, $age, $typeSession);
 }
 
 function determineSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?string $typeSession = null): ?string
@@ -1772,104 +998,37 @@ function determineSection(string $genre, string $dateNaissance, ?int $referenceY
 }
 function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getAnneeIdByValue($anneeVal);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare('SELECT idannee FROM annee WHERE ans = :annee LIMIT 1');
-    $stmt->execute([':annee' => $anneeVal]);
-    $id = $stmt->fetchColumn();
-
-    return $id === false ? null : (int) $id;
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getAnneeIdByValue($anneeVal);
 }
 
 function getAnneeValueById(int $anneeId, ?PDO $connect = null): ?int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getAnneeValueById($anneeId);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare('SELECT ans FROM annee WHERE idannee = :id LIMIT 1');
-    $stmt->execute([':id' => $anneeId]);
-    $value = $stmt->fetchColumn();
-
-    return $value === false ? null : (int) $value;
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getAnneeValueById($anneeId);
 }
 
 function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->ensureAnnee($anneeVal);
-    }
-    
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'INSERT INTO annee (ans) VALUES (:annee)
-         ON DUPLICATE KEY UPDATE ans = VALUES(ans)'
-    );
-    $stmt->execute([':annee' => $anneeVal]);
-
-    return (int) getAnneeIdByValue($anneeVal, $connect);
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->ensureAnnee($anneeVal);
 }
 
 function getDistinctYears(): array
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getDistinctYears();
-    }
-    
-    try {
-        $stmt = getConnection()->query('SELECT ans FROM annee ORDER BY ans DESC');
-        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-    } catch (PDOException $e) {
-        error_log('Distinct years error: ' . $e->getMessage());
-        return [];
-    }
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getDistinctYears();
 }
 
 function getInscritById(int $idInscrit, ?PDO $connect = null): array
 {
-    if ($connect === null && class_exists('\Patro\Domain\Inscription\Repository\InscriptionRepository')) {
-        return (new \Patro\Domain\Inscription\Repository\InscriptionRepository(getConnection()))
-            ->findById($idInscrit);
-    }
-
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT u.*,
-                i.id_inscription AS id_inscrit,
-                i.id_inscription,
-                i.id_session,
-                i.id_section,
-                i.identifiant,
-                i.montant_inscription,
-                i.prix_tee_shirt,
-                i.taille_tee_shirt,
-                i.etat,
-                i.created_at,
-                i.updated_at,
-                s.nom_section AS section,
-                s.nom_section,
-                ses.type_session,
-                a.idannee AS annee_id,
-                a.ans AS annee
-         FROM inscription i
-         INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-         LEFT JOIN section s ON s.id_section = i.id_section
-         INNER JOIN session ses ON ses.id_session = i.id_session
-         INNER JOIN annee a ON a.idannee = ses.annee_id
-         WHERE i.id_inscription = :id
-         LIMIT 1'
-    );
-    $stmt->execute([':id' => $idInscrit]);
-
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    return appContainer()
+        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+        ->findById($idInscrit);
 }
 
 function canAccessPublicInscrit(int $idInscrit): bool
@@ -1891,34 +1050,9 @@ function findInscritIdByIdentity(
 ): ?int
 {
     $typeSession = normalizeSessionType($typeSession);
-    if ($connect === null && class_exists('\Patro\Domain\Inscription\Repository\InscriptionRepository')) {
-        return (new \Patro\Domain\Inscription\Repository\InscriptionRepository(getConnection()))
-            ->findIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession);
-    }
-
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->prepare(
-        'SELECT i.id_inscription
-         FROM inscription i
-         INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-         INNER JOIN session s ON s.id_session = i.id_session
-         WHERE u.nom = :nom
-           AND u.prenom = :prenom
-           AND u.date_naissance = :date_naissance
-           AND s.annee_id = :annee_id
-           AND s.type_session = :type_session
-         LIMIT 1'
-    );
-    $stmt->execute([
-        ':nom' => $nom,
-        ':prenom' => $prenom,
-        ':date_naissance' => $dateNaissance,
-        ':annee_id' => $anneeId,
-        ':type_session' => $typeSession,
-    ]);
-    $id = $stmt->fetchColumn();
-
-    return $id === false ? null : (int) $id;
+    return appContainer()
+        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+        ->findIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession);
 }
 
 function identifierLookupKey(string $value): string
@@ -2335,14 +1469,9 @@ function nextRegistrationStepUrl(int $idInscrit): string
  */
 function getActiveAdminSessionId(): int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getActiveAdminSessionId();
-    }
-    
-    $annee = (int) date('Y');
-    $type = currentSessionType();
-    return ensureSession($annee, $type);
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getActiveAdminSessionId();
 }
 
 

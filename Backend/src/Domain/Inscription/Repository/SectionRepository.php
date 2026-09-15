@@ -81,4 +81,17 @@ final class SectionRepository
 
         return $section ?: null;
     }
+
+    /** @return array<string,mixed>|null */
+    public function findById(int $sectionId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT id_section, nom_section, genre
+             FROM section WHERE id_section = :id LIMIT 1'
+        );
+        $statement->execute([':id' => $sectionId]);
+        $section = $statement->fetch(PDO::FETCH_ASSOC);
+
+        return $section ?: null;
+    }
 }

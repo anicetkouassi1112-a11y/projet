@@ -64,6 +64,35 @@ final class InscriptionRepository
     }
 
     /** @return list<array<string,mixed>> */
+    public function search(string $term, int $yearId, string $sessionType, string $state = 'inscrit'): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT u.*, i.id_inscription AS id_inscrit, i.id_inscription,
+                    i.id_section, i.identifiant, i.etat, i.montant_inscription,
+                    i.prix_tee_shirt, i.taille_tee_shirt,
+                    s.nom_section AS section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             LEFT JOIN section s ON s.id_section = i.id_section
+             INNER JOIN session ses ON ses.id_session = i.id_session
+             WHERE ses.annee_id = :year_id
+               AND ses.type_session = :session_type
+               AND i.etat = :state
+               AND (u.nom LIKE :term OR u.prenom LIKE :term
+                    OR CONCAT(u.nom, " ", u.prenom) LIKE :term)
+             ORDER BY i.id_inscription ASC'
+        );
+        $statement->execute([
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => $state,
+            ':term' => '%' . $term . '%',
+        ]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return list<array<string,mixed>> */
     public function findBySections(array $sectionIds, int $sessionId, ?string $genre, string $state = 'inscrit'): array
     {
         return $this->findBySectionIds($sectionIds, $sessionId, $genre, false, $state);
@@ -116,6 +145,107 @@ final class InscriptionRepository
         $value = $statement->fetchColumn();
 
         return $value === false ? null : (int) $value;
+    }
+
+    public function updateState(int $inscriptionId, string $state): bool
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription SET etat = :state WHERE id_inscription = :id'
+        );
+        $statement->execute([':state' => $state, ':id' => $inscriptionId]);
+
+        return $statement->rowCount() > 0;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function findPending(int $yearId, string $sessionType, ?string $term = null): array
+    {
+        $conditions = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => 'En attente',
+        ];
+        if ($term !== null && $term !== '') {
+            $conditions[] = '(u.nom LIKE :term OR u.prenom LIKE :term OR CONCAT(u.nom, " ", u.prenom) LIKE :term)';
+            $parameters[':term'] = '%' . $term . '%';
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription, u.nom, u.prenom, u.date_naissance, u.genre,
+                    i.etat, i.montant_inscription, sec.nom_section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             INNER JOIN session s ON s.id_session = i.id_session
+             WHERE ' . implode(' AND ', $conditions) . '
+             ORDER BY i.created_at DESC'
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function findPaidTeeShirts(int $yearId, string $sessionType, ?string $genre = null, ?string $term = null): array
+    {
+        $conditions = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+            'i.prix_tee_shirt > 0',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => 'inscrit',
+        ];
+        if ($genre !== null && $genre !== '') {
+            $conditions[] = 'u.genre = :genre';
+            $parameters[':genre'] = $genre;
+        }
+        if ($term !== null && $term !== '') {
+            $conditions[] = '(u.nom LIKE :term OR u.prenom LIKE :term OR CONCAT(u.nom, " ", u.prenom) LIKE :term)';
+            $parameters[':term'] = '%' . $term . '%';
+        }
+
+        $orderBy = $sessionType === 'vacance'
+            ? 'sec.nom_section ASC, u.nom ASC, u.prenom ASC'
+            : 'u.genre ASC, u.nom ASC, u.prenom ASC';
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription AS id_inscrit, i.identifiant,
+                    i.prix_tee_shirt, i.taille_tee_shirt,
+                    u.nom, u.prenom, u.genre, u.tel, sec.nom_section AS section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             INNER JOIN session s ON s.id_session = i.id_session
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             WHERE ' . implode(' AND ', $conditions) . '
+             ORDER BY ' . $orderBy
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function validatePending(int $inscriptionId): bool
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription
+             SET etat = :new_state
+             WHERE id_inscription = :id AND etat = :old_state'
+        );
+        $statement->execute([
+            ':new_state' => 'inscrit',
+            ':id' => $inscriptionId,
+            ':old_state' => 'En attente',
+        ]);
+
+        return $statement->rowCount() > 0;
     }
 
     /** @return array{identifiant:string,ordre_inscription:int} */
