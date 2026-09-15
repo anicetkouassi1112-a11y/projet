@@ -765,85 +765,17 @@ function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $c
 
 function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
 {
-    if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
-        $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-        $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-        $ageMin = $ageMin === false ? 0 : (int) $ageMin;
-        $ageMax = $ageMax === false ? 0 : (int) $ageMax;
-        return $service->creerSection($nomSection, $description, $genre, $ageMin, $ageMax);
-    }
-    
-    requireCsrfToken();
-    
-    $nomSection = appCleanText($nomSection, 100);
-    $description = appCleanText($description, 255);
-    $genre = normalizeGenre($genre);
     $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
     $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
-
-    if ($nomSection === '') {
-        return ['success' => false, 'message' => 'Le nom de la section est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if (!in_array($genre, validGenres(), true)) {
-        return ['success' => false, 'message' => 'Le genre de la section est obligatoire.', 'alert_type' => 'warning'];
-    }
-
-    if ($ageMin === false || $ageMax === false) {
-        return ['success' => false, 'message' => 'Les ages minimum et maximum sont obligatoires.', 'alert_type' => 'warning'];
-    }
-
-    $ageMin = (int) $ageMin;
-    $ageMax = (int) $ageMax;
-
-    if ($ageMin > $ageMax) {
-        return ['success' => false, 'message' => 'L age minimum doit etre inferieur ou egal a l age maximum.', 'alert_type' => 'warning'];
-    }
-
-    $connect = getConnection();
-
-    try {
-        if (nomSectionExiste($nomSection, $connect)) {
-            return ['success' => false, 'message' => 'Cette section existe deja.', 'alert_type' => 'warning'];
-        }
-
-        $overlap = sectionIntervalOverlap($genre, $ageMin, $ageMax, $connect);
-        if ($overlap) {
-            return [
-                'success' => false,
-                'message' => 'Chevauchement refuse: la section "' . (string) $overlap['nom_section'] . '" couvre deja les ages ' . (int) $overlap['age_min'] . '-' . (int) $overlap['age_max'] . ' pour ce genre.',
-                'alert_type' => 'warning',
-            ];
-        }
-
-        $stmt = $connect->prepare(
-            'INSERT INTO section (nom_section, description, genre, age_min, age_max)
-             VALUES (:nom_section, :description, :genre, :age_min, :age_max)'
+    return appContainer()
+        ->get(\Patro\Inscription\SectionService::class)
+        ->creerSection(
+            $nomSection,
+            $description,
+            $genre,
+            $ageMin === false ? 0 : (int) $ageMin,
+            $ageMax === false ? 0 : (int) $ageMax
         );
-        $stmt->execute([
-            ':nom_section' => $nomSection,
-            ':description' => $description !== '' ? $description : null,
-            ':genre' => $genre,
-            ':age_min' => $ageMin,
-            ':age_max' => $ageMax,
-        ]);
-
-        return [
-            'success' => true,
-            'message' => 'Section "' . $nomSection . '" ajoutee avec succes.',
-            'alert_type' => 'success',
-            'id_section' => (int) $connect->lastInsertId(),
-        ];
-    } catch (PDOException $e) {
-        error_log('Create section error: ' . $e->getMessage());
-
-        if ($e->getCode() === '23000') {
-            return ['success' => false, 'message' => 'Cette section existe deja.', 'alert_type' => 'warning'];
-        }
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant l ajout de la section.', 'alert_type' => 'danger'];
-    }
 }
 
 function sessionExists(int $idSession, ?PDO $connect = null): bool
@@ -888,102 +820,19 @@ function deleteTheme(int $id): array
         ->deleteTheme($id);
 }
 
-function generateAnimateurCodeValue(int $length = 10): string
-{
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->generateAnimateurCodeValue($length);
-    }
-    
-    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    $max = strlen($alphabet) - 1;
-    $code = '';
-
-    for ($i = 0; $i < $length; $i++) {
-        $code .= $alphabet[random_int(0, $max)];
-    }
-
-    return $code;
-}
-
-function createUniqueAnimateurCode(PDO $connect, int $length = 10): string
-{
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->createUniqueAnimateurCode($connect, $length);
-    }
-    
-    for ($attempt = 0; $attempt < 10; $attempt++) {
-        $code = generateAnimateurCodeValue($length);
-        $stmt = $connect->prepare('SELECT COUNT(*) FROM code_inscription_animateur WHERE code = :code');
-        $stmt->execute([':code' => $code]);
-
-        if ((int) $stmt->fetchColumn() === 0) {
-            return $code;
-        }
-    }
-
-    throw new RuntimeException('Generation de code impossible.');
-}
-
 // Genere des codes a usage unique pour une session, sans attribution de section.
 function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?string $dateExpiration = null): array
 {
-    if (appContainer()->has(\Patro\Application\Animateur\GenererCodesAnimateur::class)) {
-        requireCsrfToken();
-        $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
-        return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
-            $idSession,
-            $idAdmin,
-            $quantite,
-            $dateExpiration,
-            getActiveAdminSessionId(),
-            app_int('ANIMATEUR_CODE_LENGTH', 10)
-        ));
-    }
-
-    if (class_exists('\Patro\Animateur\AnimateurService')) {
-        $service = appContainer()->get(\Patro\Animateur\AnimateurService::class);
-        return $service->createAnimateurCodes($idSession, $idAdmin, $quantite, $dateExpiration);
-    }
-    
     requireCsrfToken();
-    
-    if ($idSession !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez generer des codes que pour la session active.', 'codes' => []];
-    }
-
-    $quantite = max(1, min(100, $quantite));
-    $connect = getConnection();
-    $codes = [];
-
-    try {
-        $connect->beginTransaction();
-        $insert = $connect->prepare(
-            'INSERT INTO code_inscription_animateur (code, id_session, id_admin, date_expiration)
-             VALUES (:code, :id_session, :id_admin, :date_expiration)'
-        );
-
-        for ($i = 0; $i < $quantite; $i++) {
-            $code = createUniqueAnimateurCode($connect, app_int('ANIMATEUR_CODE_LENGTH', 10));
-            $insert->execute([
-                ':code' => $code,
-                ':id_session' => $idSession,
-                ':id_admin' => $idAdmin,
-                ':date_expiration' => $dateExpiration ?: null,
-            ]);
-            $codes[] = $code;
-        }
-
-        $connect->commit();
-        return ['success' => true, 'message' => count($codes) . ' code(s) genere(s).', 'codes' => $codes];
-    } catch (Throwable $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Create animateur codes error: ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Erreur pendant la generation des codes.', 'codes' => []];
-    }
+    $service = appContainer()->get(\Patro\Application\Animateur\GenererCodesAnimateur::class);
+    return $service->execute(new \Patro\Application\Animateur\GenererCodesAnimateurCommand(
+        $idSession,
+        $idAdmin,
+        $quantite,
+        $dateExpiration,
+        getActiveAdminSessionId(),
+        app_int('ANIMATEUR_CODE_LENGTH', 10)
+    ));
 }
 
 // Consomme un code et cree ou reinscrit l animateur atomiquement.
@@ -1888,14 +1737,9 @@ function nextRegistrationStepUrl(int $idInscrit): string
  */
 function getActiveAdminSessionId(): int
 {
-    if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
-        return $service->getActiveAdminSessionId();
-    }
-    
-    $annee = (int) date('Y');
-    $type = currentSessionType();
-    return ensureSession($annee, $type);
+    return appContainer()
+        ->get(\Patro\Inscription\SessionService::class)
+        ->getActiveAdminSessionId();
 }
 
 
