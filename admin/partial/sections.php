@@ -8,7 +8,7 @@ function sectionConfig(string $genderKey, ?PDO $connect = null): array
     $sections = [];
     $connect = $connect ?: getConnection();
 
-    foreach (getAllSections($connect) as $section) {
+    foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
         if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) continue;
 
         $key = (string) (int) $section['id_section'];
@@ -110,7 +110,7 @@ function animateurSectionConfig(string $genderKey, ?PDO $connect = null): array
     $sections = [];
     $connect = $connect ?: getConnection();
 
-    foreach (getAllSections($connect) as $section) {
+    foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
         if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) {
             continue;
         }
@@ -218,7 +218,7 @@ function sectionIdsByNames(array $names, ?PDO $connect = null): array
     $wanted = array_map('normalizeLookupKey', $names);
     $ids = [];
 
-    foreach (getAllSections($connect) as $section) {
+    foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
         if (in_array(normalizeLookupKey((string) $section['nom_section']), $wanted, true)) {
             $ids[] = (int) $section['id_section'];
         }

@@ -13,7 +13,7 @@ $isScolaire = ($typeSessionActive === 'scolaire');
 $message = '';
 $alertType = 'success';
 
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {

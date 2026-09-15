@@ -7,7 +7,7 @@ if (!$idInscrit || !canAccessPublicInscrit((int) $idInscrit)) {
     redirectTo(app_url('public/inscription.php'));
 }
 
-$inscrit = getInscritById((int) $idInscrit);
+$inscrit = appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)->findById((int) $idInscrit);
 if (!$inscrit) {
     redirectTo(app_url('public/inscription.php'));
 }

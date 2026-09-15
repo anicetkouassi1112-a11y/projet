@@ -14,7 +14,7 @@ $showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionA
 $colspan = 6 + ($showSectionColumn ? 1 : 0) + ($canManageAnimateurs ? 1 : 0);
 
 // --- Récupération des sections pour le filtrage dans animateur_row.php ---
-$allSections = getAllSections(); // nécessaire pour le select des sections
+$allSections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections(); // nécessaire pour le select des sections
 // Attribution des sections animateurs
 // --- Détermination de la page courante pour le genre cible ---
 $currentPage = $currentPage ?? $GLOBALS['pageName'] ?? requestTextParam('page', 40);

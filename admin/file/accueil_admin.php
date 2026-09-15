@@ -84,8 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $images = getAllActiviteImages();
 $imagesAccueil = array_filter($images, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
-$themes = getAllThemes();
-$sessions = getAllSessions();
+$themes = appContainer()->get(\Patro\Inscription\ThemeService::class)->getAllThemes();
+$sessions = appContainer()->get(\Patro\Inscription\SessionService::class)->getAllSessions();
 $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccueil);
 ?>
 <div class="container-fluid home-shell">

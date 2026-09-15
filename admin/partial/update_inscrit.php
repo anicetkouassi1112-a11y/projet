@@ -85,15 +85,7 @@ if (!$idInscrit || $idInscrit <= 0) {
 }
 
 // 6. Récupérer les données de l'inscrit
-try {
-    $conn = getConnection();
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erreur de connexion a la base de donnees.']);
-    exit();
-}
-
-$existing = getInscritById((int) $idInscrit, $conn);
+$existing = appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)->findById((int) $idInscrit);
 if (!$existing) {
     http_response_code(404);
     echo json_encode(['success' => false, 'message' => 'Inscrit introuvable.']);

@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 $filterSection = filter_var($_GET['id_section'] ?? null, FILTER_VALIDATE_INT) ?: 0;
 $filterStatut = (string) ($_GET['statut'] ?? '');
 if (!in_array($filterStatut, ['', 'actif', 'bloque'], true)) {

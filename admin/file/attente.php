@@ -112,7 +112,7 @@ try {
     setFlashMessage('danger', 'Erreur pendant le chargement des inscriptions en attente.');
 }
 
-$anneesDisponibles = getDistinctYears();
+$anneesDisponibles = appContainer()->get(\Patro\Inscription\SessionService::class)->getDistinctYears();
 $sessionLabel = sessionTypeLabel($typeSessionActive);
 $pageTitle = 'Inscriptions en attente - ' . $anneeActive . ' - ' . $sessionLabel;
 $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');

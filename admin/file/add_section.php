@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Rechargement de la liste après traitement POST (sections mises à jour)
-$sections = getAllSections();
+$sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 $sectionsByGenre = ['Garçon' => [], 'Fille' => []];
 foreach ($sections as $section) {
     $sectionGenre = normalizeGenre((string) ($section['genre'] ?? ''));

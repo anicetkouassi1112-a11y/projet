@@ -717,20 +717,6 @@ function sessionLabelById(int $idSession, ?PDO $connect = null): string
         ->sessionLabelById($idSession);
 }
 
-function getAllSessions(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAllSessions();
-}
-
-function getAllSections(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->getAllSections();
-}
-
 function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
 {
     return appContainer()
@@ -758,13 +744,6 @@ function Addtheme(string $titre, int $sessionId): array
     return appContainer()
         ->get(\Patro\Inscription\ThemeService::class)
         ->addTheme($titre, $sessionId);
-}
-
-function getAllThemes(?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\ThemeService::class)
-        ->getAllThemes();
 }
 
 function getCurrentThemeTitle(?PDO $connect = null): string
@@ -964,20 +943,6 @@ function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
     return appContainer()
         ->get(\Patro\Inscription\SessionService::class)
         ->ensureAnnee($anneeVal);
-}
-
-function getDistinctYears(): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getDistinctYears();
-}
-
-function getInscritById(int $idInscrit, ?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findById($idInscrit);
 }
 
 function canAccessPublicInscrit(int $idInscrit): bool

@@ -16,7 +16,7 @@ if (!canAccessPublicInscrit((int) $idInscrit)) {
     exit('Acces non autorise.');
 }
 
-$inscrit = getInscritById((int) $idInscrit);
+$inscrit = appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)->findById((int) $idInscrit);
 if (!$inscrit) {
     exit('Inscription introuvable.');
 }
