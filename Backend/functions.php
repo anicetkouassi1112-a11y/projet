@@ -6,7 +6,7 @@ if (is_file($autoloadPath)) {
     require_once $autoloadPath;
 }
 
-// Utiliser les nouvelles classes si disponibles, sinon utiliser les fonctions de compatibilitÃ©
+// Utiliser les nouvelles classes si disponibles, sinon utiliser les fonctions de compatibilité
 if (class_exists('\Patro\Config\Environment')) {
     \Patro\Config\Environment::load(__DIR__ . '/.env');
 } else {
@@ -47,7 +47,7 @@ if (class_exists('\Patro\Config\Environment')) {
     loadEnvFile(__DIR__ . '/.env');
 }
 
-// Bootstrap POO centralisÃ©. Les fonctions ci-dessous restent une faÃ§ade
+// Bootstrap POO centralisé. Les fonctions ci-dessous restent une façade
 // temporaire pour les scripts historiques qui les utilisent encore.
 require_once __DIR__ . '/bootstrap/app.php';
 
@@ -61,7 +61,7 @@ function appContainer(): \Patro\Shared\Container
     return $container;
 }
 
-// Wrappers de compatibilitÃ© pour les fonctions d'environnement
+// Wrappers de compatibilité pour les fonctions d'environnement
 function app_env(string $key, $default = null)
 {
     if (class_exists('\Patro\Config\Environment')) {
@@ -92,7 +92,7 @@ function app_int(string $key, int $default): int
 }
 
 /**
- * GÃ©nÃ¨re les balises favicon HTML avec versionnement pour Ã©viter le cache
+ * Génère les balises favicon HTML avec versionnement pour éviter le cache
  * Cette fonction centralise la gestion des favicons pour toute l'application
  * 
  * @param string $assetBase Chemin de base des assets (ex: '../Backend/Assets')
@@ -294,6 +294,45 @@ if (PHP_SAPI !== 'cli') {
 }
 error_reporting(E_ALL);
 
+/** Force HTTPS when APP_FORCE_HTTPS=true (production). */
+function enforceHttps(): void
+{
+    if (PHP_SAPI === 'cli' || !app_bool('APP_FORCE_HTTPS', false)) {
+        return;
+    }
+
+    $isHttps = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    if ($isHttps) {
+        return;
+    }
+
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    header('Location: https://' . $host . $uri, true, 301);
+    exit;
+}
+
+function sendSecurityHeaders(): void
+{
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+
+    if (headers_sent()) {
+        return;
+    }
+
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['adpro'])) {
     $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     $publicPostPages = [
@@ -322,10 +361,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && empty($_SESSION['adpro']
 }
 
 /**
- * Ã‰tablit et retourne une connexion PDO Ã  la base de donnÃ©es
- * Utilise le pattern Singleton pour Ã©viter les connexions multiples
+ * Établit et retourne une connexion PDO à la base de données
+ * Utilise le pattern Singleton pour éviter les connexions multiples
  * 
- * @return PDO Instance de connexion Ã  la base de donnÃ©es
+ * @return PDO Instance de connexion à la base de données
  * @throws PDOException En cas d'erreur de connexion
  */
 function getConnection(): PDO
@@ -369,9 +408,9 @@ function getConnection(): PDO
 }
 
 /**
- * VÃ©rifie que l'utilisateur admin est connectÃ©, sinon redirige vers la page de login
+ * Vérifie que l'utilisateur admin est connecté, sinon redirige vers la page de login
  * 
- * @param string $loginUrl URL de redirection si non connectÃ©
+ * @param string $loginUrl URL de redirection si non connecté
  */
 function requireadmin(string $loginUrl = 'Auth/login.php'): void
 {
@@ -496,8 +535,8 @@ function loginadmin(string $username, string $password): array
 }
 
 /**
- * GÃ©nÃ¨re ou retourne le token CSRF pour la session actuelle
- * ProtÃ¨ge contre les attaques Cross-Site Request Forgery
+ * Génère ou retourne le token CSRF pour la session actuelle
+ * Protège contre les attaques Cross-Site Request Forgery
  * 
  * @return string Token CSRF
  */
@@ -532,20 +571,25 @@ function requestTextParam(string $name, int $maxLength = 120): string
 }
 
 /**
- * Valide et sanitize un paramÃ¨tre POST de maniÃ¨re sÃ©curisÃ©e
+ * Valide et sanitize un paramètre POST de manière sécurisée
  * 
- * @param string $name Nom du paramÃ¨tre
+ * @param string $name Nom du paramètre
  * @param int $maxLength Longueur maximale
- * @return string Valeur nettoyÃ©e
+ * @return string Valeur nettoyée
  */
+function requestPostParam(string $name, int $maxLength = 255): string
+{
+    return appCleanText((string) ($_POST[$name] ?? ''), $maxLength);
+}
+
 /**
- * Valide un entier depuis la requÃªte (GET ou POST)
+ * Valide un entier depuis la requête (GET ou POST)
  * 
- * @param string $name Nom du paramÃ¨tre
- * @param int $default Valeur par dÃ©faut
- * @param int $min Minimum autorisÃ©
- * @param int $max Maximum autorisÃ©
- * @return int Valeur validÃ©e
+ * @param string $name Nom du paramètre
+ * @param int $default Valeur par défaut
+ * @param int $min Minimum autorisé
+ * @param int $max Maximum autorisé
+ * @return int Valeur validée
  */
 function requestIntParam(string $name, int $default = 0, int $min = PHP_INT_MIN, int $max = PHP_INT_MAX): int
 {
@@ -557,9 +601,9 @@ function requestIntParam(string $name, int $default = 0, int $min = PHP_INT_MIN,
 }
 
 /**
- * VÃ©rifie la validitÃ© d'un token CSRF
+ * Vérifie la validité d'un token CSRF
  * 
- * @param string|null $token Token Ã  vÃ©rifier
+ * @param string|null $token Token à vérifier
  * @return bool True si le token est valide, false sinon
  */
 function verifyCsrfToken(?string $token): bool
@@ -627,13 +671,13 @@ function isValidIvorianPhone(string $phone): bool
 
 function validGenres(): array
 {
-    return ['GarÃ§on', 'Fille'];
+    return ['Garçon', 'Fille'];
 }
 
 function normalizeGenre(?string $genre): string
 {
     return match (identifierLookupKey((string) $genre)) {
-        'garcon', 'garÃ§on', 'masculin', 'm' => 'GarÃ§on',
+        'garcon', 'garçon', 'masculin', 'm' => 'Garçon',
         'fille', 'feminin', 'f' => 'Fille',
         default => '',
     };
@@ -641,8 +685,8 @@ function normalizeGenre(?string $genre): string
 
 /**
  * Normalise le genre pour la table `animateur`, dont la colonne genre_a
- * est un ENUM('M','F') â€” Ã  ne pas confondre avec normalizeGenre() qui
- * cible les ENUM('GarÃ§on','Fille') de `section`/`utilisateur`.
+ * est un ENUM('M','F') — à ne pas confondre avec normalizeGenre() qui
+ * cible les ENUM('Garçon','Fille') de `section`/`utilisateur`.
  */
 function normalizeAnimateurGenre(?string $genre): string
 {
@@ -652,9 +696,25 @@ function normalizeAnimateurGenre(?string $genre): string
         default => '',
     };
 }
+function photoModuleEnabled(): bool
+{
+    return false;
+}
+
+function photoRequired(): bool
+{
+    return false;
+}
+
 function validTeeShirtSizes(): array
 {
     return ['S', 'M', 'L', 'XL', 'XXL'];
+}
+
+function normalizeTeeShirtSize(?string $size): string
+{
+    $size = strtoupper(trim((string) $size));
+    return in_array($size, validTeeShirtSizes(), true) ? $size : '';
 }
 
 // ===== CONFIGURATIONS GLOBALES =====
@@ -996,7 +1056,7 @@ function Addtheme(string $titre, int $sessionId): array
     requireCsrfToken();
     
     if ($sessionId !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez ajouter un thÃ¨me que pour la session active.', 'alert_type' => 'danger'];
+        return ['success' => false, 'message' => 'Vous ne pouvez ajouter un thème que pour la session active.', 'alert_type' => 'danger'];
     }
 
     $titre = appCleanText($titre, 100);
@@ -1095,7 +1155,7 @@ function updateTheme(int $id, string $titre, int $sessionId): array
     requireCsrfToken();
     
     if ($sessionId !== getActiveAdminSessionId()) {
-        return ['success' => false, 'message' => 'Vous ne pouvez modifier un thÃ¨me que pour la session active.', 'alert_type' => 'danger'];
+        return ['success' => false, 'message' => 'Vous ne pouvez modifier un thème que pour la session active.', 'alert_type' => 'danger'];
     }
 
     $titre = appCleanText($titre, 100);
@@ -1620,11 +1680,11 @@ function inscriptionForceFerme(): bool
 }
 
 /**
- * VÃ©rifie si les inscriptions sont ouvertes (selon la date ET le forÃ§age)
+ * Vérifie si les inscriptions sont ouvertes (selon la date ET le forçage)
  */
 function inscriptionsOpen(): bool
 {
-    // Si forÃ§age actif, c'est fermÃ©
+    // Si forçage actif, c'est fermé
     if (inscriptionForceFerme()) {
         return false;
     }
@@ -1632,14 +1692,14 @@ function inscriptionsOpen(): bool
     $debut = getConfigDateDebut();
     $fin = getConfigDateFin();
 
-    // Sans pÃ©riode dÃ©finie, c'est ouvert
+    // Sans période définie, c'est ouvert
     if (!$debut && !$fin) {
         return true;
     }
 
     $aujourdhui = date('Y-m-d');
 
-    // PÃ©riode complÃ¨te
+    // Période complète
     if ($debut && $fin) {
         return $aujourdhui >= $debut && $aujourdhui <= $fin;
     }
@@ -1658,7 +1718,7 @@ function inscriptionsOpen(): bool
 }
 
 /**
- * Message si inscriptions fermÃ©es
+ * Message si inscriptions fermées
  */
 function inscriptionClosedMessage(): string
 {
@@ -1735,6 +1795,11 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
     return $section ?: null;
 }
 
+function determineSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?string $typeSession = null): ?string
+{
+    $matchedSection = findMatchingSection($genre, $dateNaissance, $referenceYear, null, $typeSession);
+    return $matchedSection ? (string) $matchedSection['nom_section'] : null;
+}
 function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
@@ -1846,12 +1911,62 @@ function canAccessPublicInscrit(int $idInscrit): bool
     return isset($_SESSION['last_inscrit_id']) && (int) $_SESSION['last_inscrit_id'] === $idInscrit;
 }
 
+function findInscritIdByIdentity(
+    string $nom,
+    string $prenom,
+    string $dateNaissance,
+    int $anneeId,
+    string $typeSession,
+    ?PDO $connect = null
+): ?int
+{
+    $typeSession = normalizeSessionType($typeSession);
+    if ($connect === null && class_exists('\Patro\Domain\Inscription\Repository\InscriptionRepository')) {
+        return (new \Patro\Domain\Inscription\Repository\InscriptionRepository(getConnection()))
+            ->findIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession);
+    }
+
+    $connect = $connect ?: getConnection();
+    $stmt = $connect->prepare(
+        'SELECT i.id_inscription
+         FROM inscription i
+         INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+         INNER JOIN session s ON s.id_session = i.id_session
+         WHERE u.nom = :nom
+           AND u.prenom = :prenom
+           AND u.date_naissance = :date_naissance
+           AND s.annee_id = :annee_id
+           AND s.type_session = :type_session
+         LIMIT 1'
+    );
+    $stmt->execute([
+        ':nom' => $nom,
+        ':prenom' => $prenom,
+        ':date_naissance' => $dateNaissance,
+        ':annee_id' => $anneeId,
+        ':type_session' => $typeSession,
+    ]);
+    $id = $stmt->fetchColumn();
+
+    return $id === false ? null : (int) $id;
+}
+
 function identifierLookupKey(string $value): string
 {
     $value = trim($value);
     $value = function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
 
-    // Vrais caractÃ¨res UTF-8 (encodage correct)
+    // Vrais caractères UTF-8 (encodage correct)
+    $value = strtr($value, [
+        'à' => 'a', 'â' => 'a', 'ä' => 'a',
+        'ç' => 'c',
+        'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'î' => 'i', 'ï' => 'i',
+        'ô' => 'o', 'ö' => 'o',
+        'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+    ]);
+
+    // Caractères mal encodés (double-encodage UTF-8 corrompu)
     $value = strtr($value, [
         'Ã ' => 'a', 'Ã¢' => 'a', 'Ã¤' => 'a',
         'Ã§' => 'c',
@@ -1859,16 +1974,6 @@ function identifierLookupKey(string $value): string
         'Ã®' => 'i', 'Ã¯' => 'i',
         'Ã´' => 'o', 'Ã¶' => 'o',
         'Ã¹' => 'u', 'Ã»' => 'u', 'Ã¼' => 'u',
-    ]);
-
-    // CaractÃ¨res mal encodÃ©s (double-encodage UTF-8 corrompu)
-    $value = strtr($value, [
-        'ÃƒÂ ' => 'a', 'ÃƒÂ¢' => 'a', 'ÃƒÂ¤' => 'a',
-        'ÃƒÂ§' => 'c',
-        'ÃƒÂ©' => 'e', 'ÃƒÂ¨' => 'e', 'ÃƒÂª' => 'e', 'ÃƒÂ«' => 'e',
-        'ÃƒÂ®' => 'i', 'ÃƒÂ¯' => 'i',
-        'ÃƒÂ´' => 'o', 'ÃƒÂ¶' => 'o',
-        'ÃƒÂ¹' => 'u', 'ÃƒÂ»' => 'u', 'ÃƒÂ¼' => 'u',
     ]);
 
     return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
@@ -1888,17 +1993,451 @@ function canonicalSectionName(?string $section): string
         'stdominique' => 'St Dominique',
         'stvincent' => 'St Vincent',
         'stjoseph' => 'St Joseph',
-        'antoinettemeo' => 'Antoinette MÃ©o',
+        'antoinettemeo' => 'Antoinette Méo',
         'mariagoretti' => 'Maria Goretti',
-        'therese' => 'ThÃ©rÃ¨se',
+        'therese' => 'Thérèse',
         'bernadette' => 'Bernadette',
         default => $section,
     };
 }
 
+function sectionCodeForIdentifier(string $section): string
+{
+    $codes = [
+        'stange' => 'AN',
+        'sttharcis' => 'TH',
+        'stkizito' => 'KI',
+        'stdominique' => 'DO',
+        'stvincent' => 'VI',
+        'stjoseph' => 'JO',
+        'antoinettemeo' => 'AM',
+        'mariagoretti' => 'MG',
+        'therese' => 'TR',
+        'bernadette' => 'BE',
+    ];
+
+    $key = identifierLookupKey($section);
+    if (isset($codes[$key])) {
+        return $codes[$key];
+    }
+
+    $fallback = strtoupper(preg_replace('/[^A-Z0-9]+/', '', strtoupper($section)) ?? '');
+    return substr($fallback !== '' ? $fallback : 'XX', 0, 12);
+}
+
+function genreCodeForIdentifier(string $genre): string
+{
+    $key = identifierLookupKey($genre);
+    if (in_array($key, ['garcon', 'm', 'masculin'], true)) {
+        return 'M';
+    }
+
+    if (in_array($key, ['fille', 'f', 'feminin'], true)) {
+        return 'F';
+    }
+
+    throw new InvalidArgumentException('Genre invalide pour la generation de l identifiant.');
+}
+
+/**
+ * Genere l'identifiant metier SECTION-GENRE-ORDRE avec un compteur SQL verrouille.
+ * Cette fonction doit etre appelee dans une transaction ouverte.
+ */
+function generateNextInscritIdentifiant(PDO $connect, ?string $section, string $genre, int $digits = 3): array
+{
+    $digits = max(1, $digits);
+    $genreCode = genreCodeForIdentifier($genre);
+    $section = trim((string) $section);
+    $hasSection = $section !== '';
+    $sectionCode = $hasSection ? sectionCodeForIdentifier($section) : null;
+    $sequenceName = $hasSection
+        ? sprintf('inscrits:%s:%s', $sectionCode, $genreCode)
+        : sprintf('inscrits:GEN:%s', $genreCode);
+
+    if ($hasSection) {
+        $connect->prepare(
+            'INSERT INTO identifiant_sequences (sequence_name, last_number)
+             SELECT :sequence_name, GREATEST(
+                 COUNT(*),
+                 COALESCE(MAX(CAST(SUBSTRING_INDEX(identifiant, "-", -1) AS UNSIGNED)), 0)
+             )
+             FROM inscription i
+             INNER JOIN section s ON s.id_section = i.id_section
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             WHERE s.nom_section = :section
+               AND u.genre = :genre
+             ON DUPLICATE KEY UPDATE sequence_name = sequence_name'
+        )->execute([
+            ':sequence_name' => $sequenceName,
+            ':section' => $section,
+            ':genre' => $genre,
+        ]);
+    } else {
+        // Session scolaire: pas de section, le compteur est partage par genre uniquement.
+        $connect->prepare(
+            'INSERT INTO identifiant_sequences (sequence_name, last_number)
+             SELECT :sequence_name, GREATEST(
+                 COUNT(*),
+                 COALESCE(MAX(CAST(SUBSTRING_INDEX(identifiant, "-", -1) AS UNSIGNED)), 0)
+             )
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             WHERE i.id_section IS NULL
+               AND u.genre = :genre
+             ON DUPLICATE KEY UPDATE sequence_name = sequence_name'
+        )->execute([
+            ':sequence_name' => $sequenceName,
+            ':genre' => $genre,
+        ]);
+    }
+
+    // FOR UPDATE verrouille la ligne du compteur jusqu'au COMMIT.
+    $stmt = $connect->prepare(
+        'SELECT last_number
+         FROM identifiant_sequences
+         WHERE sequence_name = :sequence_name
+         FOR UPDATE'
+    );
+    $stmt->execute([':sequence_name' => $sequenceName]);
+    $lastNumber = $stmt->fetchColumn();
+
+    if ($lastNumber === false) {
+        throw new RuntimeException('Compteur d identifiants introuvable.');
+    }
+
+    $nextNumber = (int) $lastNumber + 1;
+    if (strlen((string) $nextNumber) > $digits) {
+        throw new RuntimeException('La largeur configuree pour l ordre d inscription est depassee.');
+    }
+
+    $update = $connect->prepare(
+        'UPDATE identifiant_sequences
+         SET last_number = :last_number
+         WHERE sequence_name = :sequence_name'
+    );
+    $update->execute([
+        ':last_number' => $nextNumber,
+        ':sequence_name' => $sequenceName,
+    ]);
+
+    $identifiant = $hasSection
+        ? sprintf(
+            '%s-%s-%s',
+            $sectionCode,
+            $genreCode,
+            str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT)
+        )
+        : sprintf(
+            '%s-%s',
+            $genreCode,
+            str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT)
+        );
+
+    return [
+        'identifiant' => $identifiant,
+        'ordre_inscription' => $nextNumber,
+    ];
+}
+
+/**
+ * Valide les donnees, genere l'identifiant metier et insere l'inscrit en une transaction PDO.
+ */
+function enregistrerInscrit(
+    string $nom,
+    string $prenom,
+    string $dateNaissance,
+    string $genre,
+    string $tel,
+    string $adresse,
+    string $prixChoisi = '',
+    string $tailleTeeShirt = '',
+    ?int $annee = null
+): array {
+    requireCsrfToken();
+
+    $container = $GLOBALS['patro_container'] ?? null;
+    if ($container instanceof \Patro\Shared\Container
+        && $container->has(\Patro\Application\Inscription\EnregistrerInscrit::class)) {
+        $command = new \Patro\Application\Inscription\EnregistrerInscritCommand(
+            $nom,
+            $prenom,
+            $dateNaissance,
+            $genre,
+            $tel,
+            $adresse,
+            $prixChoisi,
+            $tailleTeeShirt,
+            $annee ?: (int) date('Y'),
+            currentSessionType(),
+            inscriptionBaseAmount(),
+            teeShirtPrice(),
+            sectionBreakdownEnabled(currentSessionType()),
+            app_int('IDENTIFIANT_ORDER_DIGITS', 3)
+        );
+
+        return $container->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute($command);
+    }
+    
+    $nom = appCleanText($nom, 120);
+    $prenom = appCleanText($prenom, 120);
+    $dateNaissance = trim($dateNaissance);
+    $genre = normalizeGenre($genre);
+    $tel = normalizeIvorianPhone($tel);
+    $adresse = appCleanText($adresse, 180);
+    $prixChoisi = trim($prixChoisi);
+    $tailleTeeShirt = normalizeTeeShirtSize($tailleTeeShirt);
+    $annee = $annee ?: (int) date('Y');
+    $typeSession = currentSessionType();
+    $montantBase = inscriptionBaseAmount();
+    $prixTeeShirtConfigure = teeShirtPrice();
+    $montantAvecTeeShirt = $montantBase + $prixTeeShirtConfigure;
+    $montantInscription = 0;
+    $prixTeeShirt = 0;
+
+    if ($nom === '' || $prenom === '' || $dateNaissance === '' || $genre === '' || $tel === '' || $adresse === '') {
+        return ['success' => false, 'message' => 'Veuillez remplir tous les champs obligatoires.', 'alert_type' => 'danger'];
+    }
+
+    if (!in_array($genre, validGenres(), true)) {
+        return ['success' => false, 'message' => 'Genre invalide.', 'alert_type' => 'danger'];
+    }
+
+    if (!isValidDateString($dateNaissance)) {
+        return ['success' => false, 'message' => 'Date de naissance invalide.', 'alert_type' => 'danger'];
+    }
+
+    if (!isValidIvorianPhone($tel)) {
+        return ['success' => false, 'message' => 'Numero de telephone ivoirien invalide.', 'alert_type' => 'danger'];
+    }
+
+    if ($prixChoisi === (string) $montantBase) {
+        $montantInscription = $montantBase;
+        $tailleTeeShirt = '';
+    } elseif ($prixChoisi === (string) $montantAvecTeeShirt) {
+        $montantInscription = $montantBase;
+        $prixTeeShirt = $prixTeeShirtConfigure;
+        if ($tailleTeeShirt === '') {
+            return ['success' => false, 'message' => 'Veuillez selectionner la taille du tee-shirt.', 'alert_type' => 'warning'];
+        }
+    } else {
+        return ['success' => false, 'message' => 'Montant d inscription invalide.', 'alert_type' => 'danger'];
+    }
+
+    $age = calculateAge($dateNaissance, $annee);
+    if ($age === null) {
+        return ['success' => false, 'message' => 'Date de naissance invalide.', 'alert_type' => 'danger'];
+    }
+
+    if ($age >= 25) {
+        return ['success' => false, 'message' => 'Aucune inscription n\'est autorisé pour un age supérieur ou égale à 25 ans. Toutefois, vous pouvez vous inscrit en tant qu\'animateur. Pour plus information veuillez-vous rendre en présentiel.', 'alert_type' => 'warning'];
+    }
+
+    $section = findMatchingSection($genre, $dateNaissance, $annee, null, $typeSession);
+    if ($section === null && sectionBreakdownEnabled($typeSession)) {
+        return ['success' => false, 'message' => 'Aucune secion ne correspond a cet age et ce genre. Veuillez contacter l administrateur.', 'alert_type' => 'danger'];
+    }
+
+    $nomSection = $section['nom_section'] ?? null;
+    $idSection = isset($section['id_section']) ? (int) $section['id_section'] : null;
+
+    $connect = getConnection();
+
+    try {
+        $connect->beginTransaction();
+
+        $idSession = ensureSession($annee, $typeSession, $connect);
+        $anneeId = ensureAnnee($annee, $connect);
+        $existingId = findInscritIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession, $connect);
+
+        if ($existingId !== null) {
+            $connect->commit();
+            return [
+                'success' => false,
+                'message' => 'Cette personne est deja inscrite pour cette annee et ce type de session.',
+                'alert_type' => 'warning',
+                'id_inscrit' => $existingId,
+            ];
+        }
+
+        $generatedIdentifier = generateNextInscritIdentifiant(
+            $connect,
+            $nomSection,
+            $genre,
+            app_int('IDENTIFIANT_ORDER_DIGITS', 3)
+        );
+
+        $userStmt = $connect->prepare(
+            'INSERT INTO utilisateur (nom, prenom, date_naissance, genre, tel, adresse)
+             VALUES (:nom, :prenom, :date_naissance, :genre, :tel, :adresse)
+             ON DUPLICATE KEY UPDATE
+                id_utilisateur = LAST_INSERT_ID(id_utilisateur),
+                genre = VALUES(genre),
+                tel = VALUES(tel),
+                adresse = VALUES(adresse),
+                updated_at = NOW()'
+        );
+        $userStmt->execute([
+            ':nom' => $nom,
+            ':prenom' => $prenom,
+            ':date_naissance' => $dateNaissance,
+            ':genre' => $genre,
+            ':tel' => $tel,
+            ':adresse' => $adresse,
+        ]);
+        $idUtilisateur = (int) $connect->lastInsertId();
+
+        $stmt = $connect->prepare(
+            'INSERT INTO inscription (identifiant, id_utilisateur, id_session, id_section, montant_inscription, prix_tee_shirt, taille_tee_shirt, etat)
+             VALUES (:identifiant, :id_utilisateur, :id_session, :id_section, :montant_inscription, :prix_tee_shirt, :taille_tee_shirt, :etat)'
+        );
+        $stmt->execute([
+            ':identifiant' => $generatedIdentifier['identifiant'],
+            ':id_utilisateur' => $idUtilisateur,
+            ':id_session' => $idSession,
+            ':id_section' => $idSection,
+            ':montant_inscription' => $montantInscription,
+            ':prix_tee_shirt' => $prixTeeShirt,
+            ':taille_tee_shirt' => $tailleTeeShirt !== '' ? $tailleTeeShirt : null,
+            ':etat' => 'En attente',
+        ]);
+
+        $idInscrit = (int) $connect->lastInsertId();
+        $connect->commit();
+
+        return [
+            'success' => true,
+            'message' => 'Inscription enregistree avec succes.',
+            'alert_type' => 'success',
+            'id_inscrit' => $idInscrit,
+            'identifiant' => $generatedIdentifier['identifiant'],
+            'ordre_inscription' => $generatedIdentifier['ordre_inscription'],
+            'section' => $nomSection,
+            'id_section' => $idSection,
+            'montant_inscription' => $montantInscription,
+            'prix_tee_shirt' => $prixTeeShirt,
+            'taille_tee_shirt' => $tailleTeeShirt,
+            'annee_id' => $anneeId,
+            'type_session' => $typeSession,
+        ];
+    } catch (PDOException $e) {
+        if ($connect->inTransaction()) {
+            $connect->rollBack();
+        }
+        error_log('Register inscrit error: ' . $e->getMessage());
+
+        if ($e->getCode() === '23000') {
+            $message = $e->getMessage();
+            if (stripos($message, "key 'inscrits.tel'") !== false || stripos($message, "key 'tel'") !== false) {
+                return [
+                    'success' => false,
+                    'message' => 'Ce numero de telephone est deja utilise. Si plusieurs enfants partagent ce numero, appliquez la migration de base de donnees pour retirer l ancienne contrainte unique sur tel.',
+                    'alert_type' => 'warning',
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Cette inscription existe deja ou viole une contrainte unique.',
+                'alert_type' => 'warning',
+            ];
+        }
+
+        return ['success' => false, 'message' => 'Erreur base de donnees pendant l inscription.', 'alert_type' => 'danger'];
+    } catch (Throwable $e) {
+        if ($connect->inTransaction()) {
+            $connect->rollBack();
+        }
+        error_log('Register inscrit error: ' . $e->getMessage());
+
+        return ['success' => false, 'message' => 'Erreur pendant la generation de l identifiant.', 'alert_type' => 'danger'];
+    }
+}
+
 function nextRegistrationStepUrl(int $idInscrit): string
 {
     return app_url('public/auth/confirmation_enregistrement.php') . '?' . http_build_query(['inscrit_id' => $idInscrit]);
+}
+
+function getAll(string $table, ?int $idSession = null, ?string $genderField = null, ?int $idSection = null): array
+{
+    try {
+        $connect = getConnection();
+
+        if ($table === 'inscription') {
+
+            $sql = "
+                SELECT
+                    i.id_inscription,
+                    i.identifiant,
+                    u.nom,
+                    u.prenom,
+                    u.date_naissance,
+                    u.genre,
+                    u.tel,
+                    u.adresse,
+                    i.id_section,
+                    sec.nom_section AS section,
+                    i.montant_inscription,
+                    i.prix_tee_shirt,
+                    i.taille_tee_shirt,
+                    i.etat
+                FROM inscription i
+                INNER JOIN utilisateur u
+                    ON u.id_utilisateur = i.id_utilisateur
+                LEFT JOIN section sec
+                    ON sec.id_section = i.id_section
+            ";
+
+            $conditions = [];
+            $params = [];
+
+            if ($idSession !== null) {
+                $conditions[] = "i.id_session = :id_session";
+                $params[':id_session'] = $idSession;
+            }
+
+            if (!empty($genderField)) {
+                $conditions[] = "u.genre = :genre";
+                $params[':genre'] = $genderField;
+            }
+
+            // Afficher uniquement les inscrits validés
+            $conditions[] = "i.etat = :etat";
+            $params[':etat'] = 'inscrit';
+
+            // Filtre par section
+            if ($idSection !== null && $idSection > 0) {
+                $conditions[] = "i.id_section = :id_section";
+                $params[':id_section'] = $idSection;
+            }
+
+            if (!empty($conditions)) {
+                $sql .= " WHERE " . implode(" AND ", $conditions);
+            }
+
+            $sql .= " ORDER BY sec.nom_section, u.nom, u.prenom";
+
+            $stmt = $connect->prepare($sql);
+            $stmt->execute($params);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        $queries = [
+            'annee' => 'SELECT idannee, ans, created_at FROM annee ORDER BY ans ASC',
+            'admin' => 'SELECT id_admin, username, role, created_at FROM admin ORDER BY id_admin ASC',
+        ];
+
+        if (!isset($queries[$table])) {
+            return [];
+        }
+
+        return $connect->query($queries[$table])->fetchAll(PDO::FETCH_ASSOC);
+
+    } catch (PDOException $e) {
+        error_log('Erreur getAll (' . $table . ') : ' . $e->getMessage());
+        return [];
+    }
 }
 
 function existe(string $table, string $field, mixed $value, string $type = 'one'): array
@@ -1978,9 +2517,9 @@ function getActiveAdminSessionId(): int
 
 
 /**
- * RÃ©cupÃ¨re l'URL d'une image d'activitÃ© en fonction de son ordre.
- * @param int $ordre  L'ordre recherchÃ©.
- * @param array $images  Le tableau d'images (dÃ©jÃ  triÃ© par ordre).
+ * Récupère l'URL d'une image d'activité en fonction de son ordre.
+ * @param int $ordre  L'ordre recherché.
+ * @param array $images  Le tableau d'images (déjà trié par ordre).
  * @param string $fallback  URL de secours si aucune image ne correspond.
  * @return string URL de l'image.
  */
