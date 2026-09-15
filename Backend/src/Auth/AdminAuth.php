@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Patro\Auth;
 
 use Patro\Config\Environment;
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Admin\Repository\AdminRepository;
 use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
@@ -115,12 +114,7 @@ class AdminAuth
 
     private static function repository(): AdminRepository
     {
-        $container = $GLOBALS['patro_container'] ?? null;
-        if ($container instanceof \Patro\Shared\Container && $container->has(AdminRepository::class)) {
-            return $container->get(AdminRepository::class);
-        }
-
-        return new AdminRepository(DatabaseConnection::getConnection());
+        return self::container()->get(AdminRepository::class);
     }
 
     /**

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Patro\Paiement;
 
-use Patro\Database\DatabaseConnection;
 use Patro\Config\Environment;
-use PDO;
+use Patro\Domain\Inscription\Repository\InscriptionRepository;
+use Patro\Domain\Paiement\Repository\CinetPayTransactionRepository;
 use PDOException;
 
 /**
@@ -17,6 +17,12 @@ class CinetPayService
     private const ALLOWED_HOSTS = ['checkout.cinetpay.com', 'secure.cinetpay.com'];
     private const ALLOWED_CHANNELS = ['ALL', 'MOBILE_MONEY', 'CREDIT_CARD', 'WALLET'];
     private const MAX_CALLBACK_URLS_AGE = 3600; // 1 heure
+
+    public function __construct(
+        private InscriptionRepository $inscriptionRepository,
+        private CinetPayTransactionRepository $transactionRepository
+    ) {
+    }
 
     /**
      * Vérifie si CinetPay est activé
@@ -145,7 +151,7 @@ class CinetPayService
             return ['success' => false, 'message' => 'CinetPay n est pas encore configure.'];
         }
 
-        $inscrit = $this->getInscritById($idInscrit);
+        $inscrit = $this->inscriptionRepository->findById($idInscrit);
         if (!$inscrit) {
             return ['success' => false, 'message' => 'Inscription introuvable.'];
         }
@@ -159,9 +165,8 @@ class CinetPayService
         $transactionId = $this->generateTransactionId($idInscrit);
         $payload = $this->buildPaymentPayload($idInscrit, $transactionId, $amount, $currency, $inscrit);
 
-        $conn = DatabaseConnection::getConnection();
         try {
-            $this->storeTransaction($conn, [
+            $this->transactionRepository->create([
                 'transaction_id' => $transactionId,
                 'id_inscrit' => $idInscrit,
                 'amount' => $amount,
@@ -191,7 +196,7 @@ class CinetPayService
         if (!$response['ok'] || (string) ($body['code'] ?? '') !== '201') {
             $update['failure_reason'] = (string) ($body['description'] ?? $response['error'] ?? 'Erreur CinetPay');
         }
-        $this->updateTransaction($conn, $transactionId, $update);
+        $this->transactionRepository->update($transactionId, $update);
 
         if ($response['ok'] && (string) ($body['code'] ?? '') === '201' && !empty($data['payment_url'])) {
             return [
@@ -225,6 +230,18 @@ class CinetPayService
             'success' => $response['ok'] && (string) ($body['code'] ?? '') === '00',
             'body' => $body,
         ];
+    }
+
+    /** @return array<string,mixed> */
+    public function findTransaction(string $transactionId): array
+    {
+        return $this->transactionRepository->findByTransactionId($transactionId);
+    }
+
+    /** @param array<string,mixed> $values */
+    public function updateTransaction(string $transactionId, array $values): void
+    {
+        $this->transactionRepository->update($transactionId, $values);
     }
 
     // Méthodes privées
@@ -316,36 +333,6 @@ class CinetPayService
         return rtrim($scheme . '://' . $host . ($basePath ? '/' . $basePath : ''), '/');
     }
 
-    private function getInscritById(int $idInscrit): array
-    {
-        $stmt = DatabaseConnection::getConnection()->prepare(
-            'SELECT u.*,
-                    i.id_inscription AS id_inscrit,
-                    i.id_inscription,
-                    i.id_section,
-                    i.identifiant,
-                    i.etat,
-                    i.montant_inscription,
-                    i.prix_tee_shirt,
-                    i.taille_tee_shirt,
-                    s.nom_section AS section,
-                    s.nom_section,
-                    ses.type_session,
-                    a.idannee AS annee_id,
-                    a.ans AS annee
-             FROM inscription i
-             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-             LEFT JOIN section s ON s.id_section = i.id_section
-             INNER JOIN session ses ON ses.id_session = i.id_session
-             INNER JOIN annee a ON a.idannee = ses.annee_id
-             WHERE i.id_inscription = :id
-             LIMIT 1'
-        );
-        $stmt->execute([':id' => $idInscrit]);
-
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-    }
-
     private function buildPaymentPayload(int $idInscrit, string $transactionId, int $amount, string $currency, array $inscrit): array
     {
         $fullName = trim((string) ($inscrit['nom'] ?? '') . ' ' . (string) ($inscrit['prenom'] ?? ''));
@@ -389,78 +376,4 @@ class CinetPayService
         return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
     }
 
-    private function ensureTransactionsTable(PDO $conn): void
-    {
-        $conn->exec(
-            'CREATE TABLE IF NOT EXISTS cinetpay_transactions (
-                id INT NOT NULL AUTO_INCREMENT,
-                transaction_id VARCHAR(80) NOT NULL,
-                id_inscription INT NOT NULL,
-                amount INT UNSIGNED NOT NULL,
-                currency CHAR(3) NOT NULL,
-                status VARCHAR(40) NOT NULL DEFAULT "INITIATED",
-                payment_token VARCHAR(255) DEFAULT NULL,
-                payment_url TEXT DEFAULT NULL,
-                request_payload LONGTEXT DEFAULT NULL,
-                response_payload LONGTEXT DEFAULT NULL,
-                notification_payload LONGTEXT DEFAULT NULL,
-                verified_payload LONGTEXT DEFAULT NULL,
-                failure_reason TEXT DEFAULT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                UNIQUE KEY uq_cinetpay_transaction_id (transaction_id),
-                KEY idx_cinetpay_inscription (id_inscription),
-                KEY idx_cinetpay_status (status)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
-        );
-    }
-
-    private function storeTransaction(PDO $conn, array $transaction): void
-    {
-        $this->ensureTransactionsTable($conn);
-        $stmt = $conn->prepare(
-            'INSERT INTO cinetpay_transactions
-                (transaction_id, id_inscription, amount, currency, status, request_payload)
-             VALUES
-                (:transaction_id, :id_inscription, :amount, :currency, :status, :request_payload)'
-        );
-        $stmt->execute([
-            ':transaction_id' => $transaction['transaction_id'],
-            ':id_inscription' => $transaction['id_inscrit'],
-            ':amount' => $transaction['amount'],
-            ':currency' => $transaction['currency'],
-            ':status' => $transaction['status'],
-            ':request_payload' => $transaction['request_payload'],
-        ]);
-    }
-
-    private function updateTransaction(PDO $conn, string $transactionId, array $values): void
-    {
-        $allowed = [
-            'status',
-            'payment_token',
-            'payment_url',
-            'response_payload',
-            'notification_payload',
-            'verified_payload',
-            'failure_reason',
-        ];
-        $sets = [];
-        $params = [':transaction_id' => $transactionId];
-
-        foreach ($allowed as $field) {
-            if (array_key_exists($field, $values)) {
-                $sets[] = $field . ' = :' . $field;
-                $params[':' . $field] = $values[$field];
-            }
-        }
-
-        if (!$sets) {
-            return;
-        }
-
-        $stmt = $conn->prepare('UPDATE cinetpay_transactions SET ' . implode(', ', $sets) . ' WHERE transaction_id = :transaction_id');
-        $stmt->execute($params);
-    }
 }

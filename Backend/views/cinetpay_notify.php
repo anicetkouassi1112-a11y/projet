@@ -34,8 +34,7 @@ if ($contentLength > 10240) { // 10KB max pour notification
 }
 
 try {
-    $conn = getConnection();
-    $transaction = cinetpayFindTransaction($transactionId, $conn);
+    $transaction = cinetpayFindTransaction($transactionId);
     if (!$transaction) {
         error_log('CinetPay notify unknown transaction: ' . $transactionId);
         echo 'OK';
@@ -68,7 +67,7 @@ try {
         }
     }
 
-    cinetpayUpdateTransaction($conn, $transactionId, [
+    cinetpayUpdateTransaction($transactionId, [
         'notification_payload' => json_encode($safePost, JSON_UNESCAPED_SLASHES),
     ]);
 
@@ -77,17 +76,19 @@ try {
     $data = is_array($body['data'] ?? null) ? $body['data'] : [];
     $status = (string) ($data['status'] ?? ($body['message'] ?? 'UNKNOWN'));
 
-    cinetpayUpdateTransaction($conn, $transactionId, [
+    cinetpayUpdateTransaction($transactionId, [
         'status' => $status,
         'verified_payload' => json_encode($body, JSON_UNESCAPED_SLASHES),
     ]);
 
     if ($status === 'ACCEPTED') {
-        $stmt = $conn->prepare('UPDATE inscription SET etat = :etat WHERE id_inscription = :id_inscrit');
-        $stmt->execute([
-            ':etat' => 'inscrit',
-            ':id_inscrit' => (int) ($transaction['id_inscrit'] ?? 0),
-        ]);
+        $container = $GLOBALS['patro_container'] ?? null;
+        if (!$container instanceof \Patro\Shared\Container) {
+            throw new RuntimeException('Application container is not available');
+        }
+
+        $container->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+            ->updateState((int) ($transaction['id_inscrit'] ?? 0), 'inscrit');
     }
 
     echo 'OK';
@@ -98,4 +99,3 @@ try {
     error_log('CinetPay notify error: ' . $e->getMessage());
     echo 'OK';
 }
-

@@ -134,6 +134,89 @@ final class InscriptionRepository
         ]);
     }
 
+    public function updateState(int $inscriptionId, string $state): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription SET etat = :state WHERE id_inscription = :inscription_id'
+        );
+        $statement->execute([
+            ':state' => $state,
+            ':inscription_id' => $inscriptionId,
+        ]);
+    }
+
+    public function transitionState(int $inscriptionId, string $from, string $to): bool
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription
+             SET etat = :to_state
+             WHERE id_inscription = :inscription_id AND etat = :from_state'
+        );
+        $statement->execute([
+            ':to_state' => $to,
+            ':inscription_id' => $inscriptionId,
+            ':from_state' => $from,
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function findPending(int $yearId, string $sessionType, string $search = ''): array
+    {
+        $where = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => 'En attente',
+        ];
+        if ($search !== '') {
+            $where[] = '(u.nom LIKE :search_nom OR u.prenom LIKE :search_prenom OR CONCAT(u.nom, " ", u.prenom) LIKE :search_fullname)';
+            $term = '%' . $search . '%';
+            $parameters[':search_nom'] = $term;
+            $parameters[':search_prenom'] = $term;
+            $parameters[':search_fullname'] = $term;
+        }
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription, u.nom, u.prenom, u.date_naissance, u.genre,
+                    i.etat, i.montant_inscription, sec.nom_section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             INNER JOIN session s ON s.id_session = i.id_session
+             WHERE ' . implode(' AND ', $where) . '
+             ORDER BY i.created_at DESC'
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function findForBackup(int $yearId, string $sessionType): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription AS id_inscrit, i.identifiant, i.etat,
+                    i.montant_inscription, i.prix_tee_shirt, i.taille_tee_shirt,
+                    u.nom, u.prenom, u.date_naissance, u.genre, u.tel, u.adresse,
+                    s.nom_section AS section, ses.type_session, a.ans AS annee
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             INNER JOIN section s ON s.id_section = i.id_section
+             INNER JOIN session ses ON ses.id_session = i.id_session
+             INNER JOIN annee a ON a.idannee = ses.annee_id
+             WHERE ses.annee_id = :year_id AND ses.type_session = :session_type
+             ORDER BY i.id_inscription ASC'
+        );
+        $statement->execute([':year_id' => $yearId, ':session_type' => $sessionType]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function findIdByIdentity(
         string $lastName,
         string $firstName,

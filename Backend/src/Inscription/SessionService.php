@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Patro\Inscription;
 
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Configuration\Repository\ConfigurationRepository;
 use Patro\Domain\Inscription\SessionType;
 use Patro\Domain\Inscription\Repository\SessionRepository;
@@ -22,14 +21,14 @@ class SessionService
     private ConfigurationRepository $configurationRepository;
 
     public function __construct(
-        ?PDO $connection = null,
-        ?SessionRepository $repository = null,
-        ?ConfigurationRepository $configurationRepository = null
+        PDO $connection,
+        SessionRepository $repository,
+        ConfigurationRepository $configurationRepository
     )
     {
-        $this->connection = $connection ?? DatabaseConnection::getConnection();
-        $this->repository = $repository ?? new SessionRepository($this->connection);
-        $this->configurationRepository = $configurationRepository ?? new ConfigurationRepository($this->connection);
+        $this->connection = $connection;
+        $this->repository = $repository;
+        $this->configurationRepository = $configurationRepository;
     }
 
     /**

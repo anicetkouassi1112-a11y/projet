@@ -15,15 +15,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Jeton CSRF invalide. Veuillez recharger la page.';
         $alertType = 'danger';
     } else {
-        $result = registerAnimateurWithCode(
-            $code,
-            $nom,
-            $prenom,
-            $genre,
-            $tel,
-            (string) ($_POST['password'] ?? ''),
-            (string) ($_POST['password_confirm'] ?? '')
-        );
+        $attempts = $_SESSION['animateur_code_attempts'] ?? ['count' => 0, 'locked_until' => 0];
+        if ((int) ($attempts['locked_until'] ?? 0) > time()) {
+            $result = [
+                'success' => false,
+                'message' => 'Trop de tentatives. Veuillez patienter avant de reessayer.',
+                'alert_type' => 'danger',
+            ];
+        } else {
+            $result = appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)
+                ->execute(new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
+                    $code,
+                    $nom,
+                    $prenom,
+                    $genre,
+                    $tel,
+                    (string) ($_POST['password'] ?? ''),
+                    (string) ($_POST['password_confirm'] ?? ''),
+                    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+                ));
+            if (!$result['success'] && ($result['message'] ?? '') === 'Code invalide ou deja utilise.') {
+                $count = (int) ($attempts['count'] ?? 0) + 1;
+                $_SESSION['animateur_code_attempts'] = [
+                    'count' => $count,
+                    'locked_until' => $count >= 8 ? time() + 600 : 0,
+                ];
+            } elseif ($result['success']) {
+                unset($_SESSION['animateur_code_attempts']);
+            }
+        }
         $message = (string) ($result['message'] ?? '');
         $alertType = (string) ($result['alert_type'] ?? 'danger');
 

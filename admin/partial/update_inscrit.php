@@ -155,7 +155,12 @@ try {
     }
 
     // Recherche de la section correspondante (peut retourner null en session scolaire)
-    $section = findMatchingSection($genre, $dateNaissance, $annee, $conn, $typeSession);
+    $section = appContainer()->get(\Patro\Inscription\SectionService::class)
+        ->findMatchingSection(
+            $genre,
+            calculateAge($dateNaissance, $annee) ?? -1,
+            $typeSession
+        );
     
     // Erreur uniquement si la session nécessite une section ET qu'aucune n'est trouvée
     if ($section === null && sectionBreakdownEnabled($typeSession)) {

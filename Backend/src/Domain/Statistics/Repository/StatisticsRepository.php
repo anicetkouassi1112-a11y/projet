@@ -80,6 +80,56 @@ final class StatisticsRepository
         return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /** @return list<array<string,mixed>> */
+    public function paidTeeShirts(
+        int $yearId,
+        string $sessionType,
+        string $state,
+        ?string $genre = null,
+        string $search = '',
+        bool $groupBySection = false
+    ): array {
+        $where = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+            'i.prix_tee_shirt > 0',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => $state,
+        ];
+        if ($genre !== null && $genre !== '') {
+            $where[] = 'u.genre = :genre';
+            $parameters[':genre'] = $genre;
+        }
+        if ($search !== '') {
+            $where[] = '(u.nom LIKE :search_nom OR u.prenom LIKE :search_prenom OR CONCAT(u.nom, " ", u.prenom) LIKE :search_fullname)';
+            $term = '%' . $search . '%';
+            $parameters[':search_nom'] = $term;
+            $parameters[':search_prenom'] = $term;
+            $parameters[':search_fullname'] = $term;
+        }
+        $orderBy = $groupBySection
+            ? 'sec.nom_section ASC, u.nom ASC, u.prenom ASC'
+            : 'u.genre ASC, u.nom ASC, u.prenom ASC';
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription AS id_inscrit, i.identifiant, i.prix_tee_shirt,
+                    i.taille_tee_shirt, u.nom, u.prenom, u.genre, u.tel,
+                    sec.nom_section AS section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             INNER JOIN session s ON s.id_session = i.id_session
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             WHERE ' . implode(' AND ', $where) . '
+             ORDER BY ' . $orderBy
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function registrationAmount(int $yearId, string $sessionType, string $state): int
     {
         $statement = $this->connection->prepare(

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Patro\Config\Environment;
-use Patro\Database\DatabaseConnection;
 use Patro\Http\ErrorHandler;
 use Patro\Http\SessionManager;
 use Patro\Inscription\SectionService;
@@ -20,7 +19,6 @@ use Patro\Domain\Inscription\Repository\InscriptionRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
-use Patro\Animateur\AnimateurService;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
 use Patro\Application\Animateur\AuthentifierAnimateur;
@@ -29,6 +27,8 @@ use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
 use Patro\Domain\Jeu\Repository\JeuRepository;
 use Patro\Domain\Activite\Repository\ActiviteImageRepository;
+use Patro\Domain\Paiement\Repository\CinetPayTransactionRepository;
+use Patro\Paiement\CinetPayService;
 use Patro\Shared\Container;
 
 $autoloadPath = dirname(__DIR__) . '/vendor/autoload.php';
@@ -50,13 +50,6 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(PdoConnectionFactory::class, static fn (): PdoConnectionFactory => new PdoConnectionFactory());
     $container->singleton(PDO::class, static fn (Container $container): PDO => $container->get(PdoConnectionFactory::class)->create());
     $container->singleton(PdoTransactionManager::class, static fn (Container $container): PdoTransactionManager => new PdoTransactionManager($container->get(PDO::class)));
-    $container->singleton(AnimateurService::class, static fn (Container $container): AnimateurService => new AnimateurService(
-        $container->get(PDO::class),
-        $container->get(AnimateurRepository::class),
-        $container->get(SessionManager::class),
-        $container->get(SessionRepository::class),
-        $container->get(ConfigurationRepository::class)
-    ));
     $container->singleton(InscrireAnimateurParCode::class, static fn (Container $container): InscrireAnimateurParCode => new InscrireAnimateurParCode(
         $container->get(AnimateurRepository::class),
         $container->get(PdoTransactionManager::class)
@@ -88,6 +81,11 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(InscriptionRepository::class, static fn (Container $container): InscriptionRepository => new InscriptionRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
     $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
+    $container->singleton(CinetPayTransactionRepository::class, static fn (Container $container): CinetPayTransactionRepository => new CinetPayTransactionRepository($container->get(PDO::class)));
+    $container->singleton(CinetPayService::class, static fn (Container $container): CinetPayService => new CinetPayService(
+        $container->get(InscriptionRepository::class),
+        $container->get(CinetPayTransactionRepository::class)
+    ));
     $container->singleton(EnregistrerInscrit::class, static fn (Container $container): EnregistrerInscrit => new EnregistrerInscrit(
         $container->get(InscriptionRepository::class),
         $container->get(SectionRepository::class),
