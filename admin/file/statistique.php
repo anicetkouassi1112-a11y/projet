@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
 
 $anneeActive = displayYearFromRequest((int) date('Y'));
-$typeSessionActive = displaySessionTypeFromRequest(currentSessionType());
+$typeSessionActive = displaySessionTypeFromRequest(appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $anneeId = selectedYearId($anneeActive);
 $searchQuery = trim((string) ($_GET['search'] ?? ''));
 $sectionStats = [];

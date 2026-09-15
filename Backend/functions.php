@@ -705,14 +705,12 @@ function sessionTypeLabel(?string $type): string
     return normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
 }
 
-function currentSessionType(): string
-{
-    return appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
-}
-
 function sectionBreakdownEnabled(?string $typeSession = null): bool
 {
-    return normalizeSessionType($typeSession, currentSessionType()) !== 'scolaire';
+    return normalizeSessionType(
+        $typeSession,
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()
+    ) !== 'scolaire';
 }
 
 
@@ -846,7 +844,7 @@ function enregistrerInscrit(
     ?int $annee = null
 ): array {
     requireCsrfToken();
-    $typeSession = currentSessionType();
+    $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
 
     return appContainer()->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute(
         new \Patro\Application\Inscription\EnregistrerInscritCommand(

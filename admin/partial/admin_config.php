@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $dateDebutActuel = $configuration->registrationDateStart() ?? '';
 $dateFinActuel = $configuration->registrationDateEnd() ?? '';
 $forceFermeActuel = $configuration->forceRegistrationClosed();
-$typeSessionActuel = currentSessionType();
+$typeSessionActuel = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
 $montantInscriptionActuel = $configuration->registrationAmount();
 $prixTeeShirtActuel = $configuration->teeShirtPrice();
 $anneeActive = activeYearFromRequest();

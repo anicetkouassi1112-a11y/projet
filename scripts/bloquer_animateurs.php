@@ -10,7 +10,7 @@ if (PHP_SAPI !== 'cli') {
 $options = getopt('', ['annee::', 'type_session::', 'days-after-open::', 'force']);
 $configuration = appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class);
 $annee = isset($options['annee']) ? (int) $options['annee'] : (int) date('Y');
-$typeSession = normalizeSessionType((string) ($options['type_session'] ?? currentSessionType()));
+$typeSession = normalizeSessionType((string) ($options['type_session'] ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()));
 $daysAfterOpen = isset($options['days-after-open']) ? (int) $options['days-after-open'] : null;
 $force = array_key_exists('force', $options);
 

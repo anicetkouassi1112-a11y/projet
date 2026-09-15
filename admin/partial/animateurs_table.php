@@ -10,7 +10,7 @@ $tableTitle = $tableTitle ?? 'animateurs';
 $inscrits = $inscrits ?? [];
 $messageInscritsTable = $messageInscritsTable ?? 'Aucun animateur trouve.';
 $canManageAnimateurs = adminHasRole(['directeur']);
-$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? currentSessionType());
+$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $colspan = 6 + ($showSectionColumn ? 1 : 0) + ($canManageAnimateurs ? 1 : 0);
 
 // --- Récupération des sections pour le filtrage dans animateur_row.php ---

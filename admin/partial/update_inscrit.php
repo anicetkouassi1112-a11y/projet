@@ -101,7 +101,7 @@ if ($sessionId !== appContainer()->get(\Patro\Inscription\SessionService::class)
 }
 
 // 8. Récupérer le type de session de l'inscrit
-$typeSession = (string) ($existing['type_session'] ?? currentSessionType());
+$typeSession = (string) ($existing['type_session'] ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 
 // 9. Récupérer et valider les champs modifiés
 $nom = appCleanText((string) ($payload['nom'] ?? ''), 120);

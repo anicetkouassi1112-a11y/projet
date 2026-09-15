@@ -9,7 +9,7 @@ $tableTitle = $tableTitle ?? 'inscription';
 $inscrits = $inscrits ?? [];
 $messageInscritsTable = $messageInscritsTable ?? 'Aucun inscrit trouve.';
 $canManageInscrits = adminHasRole(['directeur']);
-$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? currentSessionType());
+$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $colspan = 10 + ($showSectionColumn ? 1 : 0) + ($canManageInscrits ? 1 : 0);
 ?>
 <div class="card mb-4 shadow-sm table-panel">
