@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /public/
+Disallow: /admin/
+Disallow: /Backend/
+Disallow: /Database/
+Disallow: /storage/
+
+Sitemap: http://localhost/Projet_patro-1/public/sitemap.xml

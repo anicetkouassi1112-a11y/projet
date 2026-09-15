@@ -1,0 +1,108 @@
+﻿
+.dashboard-summary,
+.section-distribution-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px;
+    margin: 0 0 26px;
+}
+
+.dashboard-metric {
+    position: relative;
+    display: block;
+    min-height: 132px;
+    width: 100%;
+    padding: 18px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--text);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.dashboard-metric::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.dashboard-metric::after {
+    content: "";
+    position: absolute;
+    right: 16px;
+    bottom: 18px;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(36, 84, 214, 0.12);
+    border-radius: 50%;
+    background: var(--primary-soft);
+}
+
+.dashboard-metric-link:hover,
+.dashboard-metric-link:focus {
+    color: var(--text);
+    transform: translateY(-2px);
+    border-color: rgba(36, 84, 214, 0.38);
+    box-shadow: var(--shadow-md);
+}
+
+.dashboard-metric span {
+    display: block;
+    max-width: 160px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dashboard-metric strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--text);
+    font-size: 35px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.dashboard-metric small {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 12px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    color: var(--primary-dark);
+    background: var(--primary-soft);
+    font-weight: 900;
+}
+
+.dashboard-metric-total::before {
+    background: linear-gradient(90deg, var(--accent), #18b68f);
+}
+
+.dashboard-metric-total small {
+    color: #087365;
+    background: var(--accent-soft);
+}
+
+@media (max-width: 1100px) {
+    .dashboard-summary {
+        grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .dashboard-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-metric {
+        min-height: 112px;
+    }
+}

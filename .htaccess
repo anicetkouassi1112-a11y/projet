@@ -1,0 +1,16 @@
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+<FilesMatch "^(\.env|composer\.(json|lock)|README\.md|INSTALL\.md|CHANGELOG\.md)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(\.git|\.github|Database|storage|scripts|tests|admin/vendor)(/|$) - [F,L]
+</IfModule>
