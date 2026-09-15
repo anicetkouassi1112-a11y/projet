@@ -17,7 +17,7 @@ if ($transaction) {
     $body = is_array($verification['body'] ?? null) ? $verification['body'] : [];
     $data = is_array($body['data'] ?? null) ? $body['data'] : [];
     $status = (string) ($data['status'] ?? ($body['message'] ?? ($transaction['status'] ?? 'UNKNOWN')));
-    cinetpayUpdateTransaction(getConnection(), $transactionId, [
+    cinetpayUpdateTransaction($transactionId, [
         'status' => $status,
         'verified_payload' => json_encode($body, JSON_UNESCAPED_SLASHES),
     ]);

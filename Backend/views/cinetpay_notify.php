@@ -34,8 +34,7 @@ if ($contentLength > 10240) { // 10KB max pour notification
 }
 
 try {
-    $conn = getConnection();
-    $transaction = cinetpayFindTransaction($transactionId, $conn);
+    $transaction = cinetpayFindTransaction($transactionId);
     if (!$transaction) {
         error_log('CinetPay notify unknown transaction: ' . $transactionId);
         echo 'OK';
@@ -68,7 +67,7 @@ try {
         }
     }
 
-    cinetpayUpdateTransaction($conn, $transactionId, [
+    cinetpayUpdateTransaction($transactionId, [
         'notification_payload' => json_encode($safePost, JSON_UNESCAPED_SLASHES),
     ]);
 
@@ -77,7 +76,7 @@ try {
     $data = is_array($body['data'] ?? null) ? $body['data'] : [];
     $status = (string) ($data['status'] ?? ($body['message'] ?? 'UNKNOWN'));
 
-    cinetpayUpdateTransaction($conn, $transactionId, [
+    cinetpayUpdateTransaction($transactionId, [
         'status' => $status,
         'verified_payload' => json_encode($body, JSON_UNESCAPED_SLASHES),
     ]);
