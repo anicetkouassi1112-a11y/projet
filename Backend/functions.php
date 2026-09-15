@@ -1761,17 +1761,22 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
         return null;
     }
 
+    $age = calculateAge($dateNaissance, $referenceYear);
+    if ($age === null) {
+        return null;
+    }
+
+    if (class_exists('\Patro\Inscription\SectionService')) {
+        $service = $connect !== null ? new \Patro\Inscription\SectionService($connect) : new \Patro\Inscription\SectionService();
+        return $service->findMatchingSection($genre, $age, $typeSession);
+    }
+
     // Session scolaire: pas de repartition par section, la section reste nulle (repartition par genre uniquement).
     if (!sectionBreakdownEnabled($typeSession)) {
         return null;
     }
 
     // Session vacance: repartition par section, croisee avec l'age.
-    $age = calculateAge($dateNaissance, $referenceYear);
-    if ($age === null) {
-        return null;
-    }
-
     $connect = $connect ?: getConnection();
     $stmt = $connect->prepare(
         'SELECT id_section, nom_section, description, genre, age_min, age_max
