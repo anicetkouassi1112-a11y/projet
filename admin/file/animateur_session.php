@@ -4,7 +4,6 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
 
-$conn = getConnection();
 $animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
 $anneeActive = activeYearFromRequest();
 $typeSessionActive = activeSessionTypeFromRequest();
