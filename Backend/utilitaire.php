@@ -54,7 +54,7 @@ function displayFlashMessage(): void
 
 function selectedYearId(int $anneeActive): int
 {
-    return ensureAnnee($anneeActive);
+    return appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
 }
 
 function activeYearFromRequest(): int

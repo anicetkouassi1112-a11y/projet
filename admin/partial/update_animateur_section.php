@@ -56,7 +56,7 @@ if ($idSectionRaw !== '' && !$idSection) {
 
 // Session administrative active : seule celle-ci peut etre modifiee, comme
 // pour les autres champs editables de la ligne (cf. animateur_row.php).
-$idSessionActive = getActiveAdminSessionId();
+$idSessionActive = appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId();
 
 // Recuperation de l'animateur + de son affectation sur la session active,
 // pour connaitre son genre et verifier qu'il appartient bien a cette session.

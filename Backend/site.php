@@ -30,7 +30,7 @@ function getVisibleActiviteImages(?PDO $connect = null): array
             return [];
         }
 
-        return $repository->findVisibleBySession(getActiveAdminSessionId());
+        return $repository->findVisibleBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
     } catch (PDOException $e) {
         error_log('Visible activite images error: ' . $e->getMessage());
         return [];
@@ -45,7 +45,7 @@ function getAllActiviteImages(?PDO $connect = null): array
             return [];
         }
 
-        return $repository->findAllBySession(getActiveAdminSessionId());
+        return $repository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
     } catch (PDOException $e) {
         error_log('All activite images error: ' . $e->getMessage());
         return [];
@@ -108,7 +108,7 @@ function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0
         $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
 
-        $id = $repository->create(getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
+        $id = $repository->create(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
 
         return ['success' => true, 'message' => 'Image ajoutee avec succes.', 'id' => $id];
     } catch (PDOException $e) {
@@ -129,11 +129,11 @@ function updateActiviteImageMeta(int $id, string $titre, int $ordre, bool $visib
     $description = appCleanText($description, 5000);
 
     $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
-    if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, getActiveAdminSessionId())) {
+    if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $updated = $repository->updateMeta($id, getActiveAdminSessionId(), $titre, $ordre, $visible, $description);
+    $updated = $repository->updateMeta($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $titre, $ordre, $visible, $description);
 
     return $updated
         ? ['success' => true, 'message' => 'Image mise a jour.']
@@ -192,7 +192,7 @@ function replaceActiviteImageFile(int $id, string $tmpPath, string $mimeType, ?s
     try {
         $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
-        if (!$repository->replaceImagePath($id, getActiveAdminSessionId(), $storedPath)) {
+        if (!$repository->replaceImagePath($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(), $storedPath)) {
             @unlink($newPath);
             return ['success' => false, 'message' => 'Image introuvable.'];
         }
@@ -222,12 +222,12 @@ function deleteActiviteImage(int $id): array
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $image = $repository->findByIdAndSession($id, getActiveAdminSessionId());
+    $image = $repository->findByIdAndSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
     if (!$image) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    if (!$repository->deleteBySession($id, getActiveAdminSessionId())) {
+    if (!$repository->deleteBySession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
@@ -253,7 +253,7 @@ function getActiviteImageById(int $id, ?PDO $connect = null): array
     $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
     $repository->ensureSessionColumn();
 
-    return $repository->findByIdAndSession($id, getActiveAdminSessionId()) ?? [];
+    return $repository->findByIdAndSession($id, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()) ?? [];
 }
 
 /**

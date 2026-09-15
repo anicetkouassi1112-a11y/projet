@@ -727,7 +727,7 @@ function createAnimateurCodes(int $idSession, int $idAdmin, int $quantite, ?stri
         $idAdmin,
         $quantite,
         $dateExpiration,
-        getActiveAdminSessionId(),
+        appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId(),
         app_int('ANIMATEUR_CODE_LENGTH', 10)
     ));
 }
@@ -738,7 +738,7 @@ function registerAnimateurWithCode(string $code, string $nom, string $prenom, st
     requireCsrfToken();
     return appContainer()->get(\Patro\Application\Animateur\InscrireAnimateurParCode::class)->execute(
         new \Patro\Application\Animateur\InscrireAnimateurParCodeCommand(
-            $code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm, getActiveAdminSessionId()
+            $code, $nom, $prenom, $genre, $tel, $password, $passwordConfirm, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
         )
     );
 }
@@ -746,7 +746,7 @@ function registerAnimateurWithCode(string $code, string $nom, string $prenom, st
 function loginAnimateur(string $nom_a, string $password): array
 {
     return appContainer()->get(\Patro\Application\Animateur\AuthentifierAnimateur::class)
-        ->execute($nom_a, $password, getActiveAdminSessionId());
+        ->execute($nom_a, $password, appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
 }
 // Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
 function validSessionTypes(): array
@@ -863,30 +863,6 @@ function calculateAge(string $dateNaissance, ?int $referenceYear = null): ?int
     } catch (Throwable $e) {
         return null;
     }
-}
-
-function findMatchingSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?PDO $connect = null, ?string $typeSession = null): ?array
-{
-    $genre = normalizeGenre($genre);
-    if (!in_array($genre, validGenres(), true)) {
-        return null;
-    }
-
-    $age = calculateAge($dateNaissance, $referenceYear);
-    if ($age === null) {
-        return null;
-    }
-
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->findMatchingSection($genre, $age, $typeSession);
-}
-
-function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->ensureAnnee($anneeVal);
 }
 
 function canAccessPublicInscrit(int $idInscrit): bool
@@ -1026,13 +1002,6 @@ function nextRegistrationStepUrl(int $idInscrit): string
  * La session active est définie par : année courante + type_session issu de la config.
  * Toute modification ne doit s'appliquer qu'à cette session.
  */
-function getActiveAdminSessionId(): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getActiveAdminSessionId();
-}
-
 
 /**
  * Récupère l'URL d'une image d'activité en fonction de son ordre.

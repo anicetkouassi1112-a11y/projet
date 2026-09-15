@@ -94,7 +94,7 @@ if (!$existing) {
 
 // 7. Vérifier que l'inscrit appartient à la session active
 $sessionId = (int) ($existing['id_session'] ?? 0);
-if ($sessionId !== getActiveAdminSessionId()) {
+if ($sessionId !== appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Vous ne pouvez modifier que les inscrits de la session active.']);
     exit();
@@ -144,7 +144,8 @@ if ($age === null) {
     exit();
 }
 
-$section = findMatchingSection($genre, $dateNaissance, $annee, null, $typeSession);
+$section = appContainer()->get(\Patro\Inscription\SectionService::class)
+    ->findMatchingSection(normalizeGenre($genre), calculateAge($dateNaissance, $annee) ?? -1, $typeSession);
 if ($section === null && sectionBreakdownEnabled($typeSession)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);
