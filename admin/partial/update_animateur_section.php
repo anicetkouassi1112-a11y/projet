@@ -54,27 +54,16 @@ if ($idSectionRaw !== '' && !$idSection) {
     respond(400, false, 'Identifiant de section invalide.');
 }
 
-$connect = getConnection();
-
 // Session administrative active : seule celle-ci peut etre modifiee, comme
 // pour les autres champs editables de la ligne (cf. animateur_row.php).
 $idSessionActive = getActiveAdminSessionId();
 
+$animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
+$sectionRepository = appContainer()->get(\Patro\Domain\Inscription\Repository\SectionRepository::class);
+
 // Recuperation de l'animateur + de son affectation sur la session active,
 // pour connaitre son genre et verifier qu'il appartient bien a cette session.
-$stmt = $connect->prepare(
-    'SELECT ans.id_animateur_session, a.genre_a
-     FROM animateur_session ans
-     INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
-     WHERE ans.id_animateur = :id_animateur
-       AND ans.id_session = :id_session
-     LIMIT 1'
-);
-$stmt->execute([
-    ':id_animateur' => $idAnimateur,
-    ':id_session' => $idSessionActive,
-]);
-$animateurSession = $stmt->fetch(PDO::FETCH_ASSOC);
+$animateurSession = $animateurRepository->findSessionAssignment($idAnimateur, $idSessionActive);
 
 if (!$animateurSession) {
     respond(404, false, "Cet animateur n'est pas inscrit sur la session active.");
@@ -86,11 +75,7 @@ $genreSectionAttendu = $genreAnimateur === 'M' ? 'Garçon' : ($genreAnimateur ==
 $nomSection = null;
 
 if ($idSection !== null) {
-    $sectionStmt = $connect->prepare(
-        'SELECT id_section, nom_section, genre FROM section WHERE id_section = :id_section LIMIT 1'
-    );
-    $sectionStmt->execute([':id_section' => $idSection]);
-    $sectionRow = $sectionStmt->fetch(PDO::FETCH_ASSOC);
+    $sectionRow = $sectionRepository->findById($idSection);
 
     if (!$sectionRow) {
         respond(404, false, 'Section introuvable.');
@@ -104,15 +89,11 @@ if ($idSection !== null) {
 }
 
 try {
-    $updateStmt = $connect->prepare(
-        'UPDATE animateur_session
-         SET id_section = :id_section
-         WHERE id_animateur_session = :id_animateur_session'
+    $animateurRepository->updateSessionSection(
+        (int) $animateurSession['id_animateur_session'],
+        $idSection,
+        $idSessionActive
     );
-    $updateStmt->execute([
-        ':id_section' => $idSection,
-        ':id_animateur_session' => (int) $animateurSession['id_animateur_session'],
-    ]);
 } catch (PDOException $e) {
     error_log('Update animateur section error: ' . $e->getMessage());
     respond(500, false, 'Erreur base de donnees pendant la mise a jour.');

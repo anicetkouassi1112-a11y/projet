@@ -53,7 +53,9 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(AnimateurService::class, static fn (Container $container): AnimateurService => new AnimateurService(
         $container->get(PDO::class),
         $container->get(AnimateurRepository::class),
-        $container->get(SessionManager::class)
+        $container->get(SessionManager::class),
+        $container->get(SessionRepository::class),
+        $container->get(ConfigurationRepository::class)
     ));
     $container->singleton(InscrireAnimateurParCode::class, static fn (Container $container): InscrireAnimateurParCode => new InscrireAnimateurParCode(
         $container->get(AnimateurRepository::class),

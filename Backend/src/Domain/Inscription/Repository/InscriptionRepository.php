@@ -91,6 +91,49 @@ final class InscriptionRepository
         return $statement->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 
+    public function updateUser(
+        int $userId,
+        string $lastName,
+        string $firstName,
+        string $birthDate,
+        string $genre,
+        string $phone,
+        string $address
+    ): void {
+        $statement = $this->connection->prepare(
+            'UPDATE utilisateur
+             SET nom = :last_name,
+                 prenom = :first_name,
+                 date_naissance = :birth_date,
+                 genre = :genre,
+                 tel = :phone,
+                 adresse = :address
+             WHERE id_utilisateur = :user_id'
+        );
+        $statement->execute([
+            ':last_name' => $lastName,
+            ':first_name' => $firstName,
+            ':birth_date' => $birthDate,
+            ':genre' => $genre,
+            ':phone' => $phone,
+            ':address' => $address,
+            ':user_id' => $userId,
+        ]);
+    }
+
+    public function updateSection(int $inscriptionId, ?int $sectionId): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription
+             SET id_section = :section_id
+             WHERE id_inscription = :inscription_id'
+        );
+        $statement->execute([
+            ':section_id' => $sectionId,
+            ':inscription_id' => $inscriptionId,
+        ]);
+    }
+
     public function findIdByIdentity(
         string $lastName,
         string $firstName,

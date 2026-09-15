@@ -32,4 +32,34 @@ final class AdminRepository
         );
         $statement->execute([':password' => $passwordHash, ':id' => $adminId]);
     }
+
+    public function usernameExistsForOther(int $adminId, string $username): bool
+    {
+        $statement = $this->connection->prepare(
+            'SELECT COUNT(*) FROM admin
+             WHERE username = :username AND id_admin != :id'
+        );
+        $statement->execute([':username' => $username, ':id' => $adminId]);
+
+        return (int) $statement->fetchColumn() > 0;
+    }
+
+    public function updateUsername(int $adminId, string $username): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE admin SET username = :username WHERE id_admin = :id'
+        );
+        $statement->execute([':username' => $username, ':id' => $adminId]);
+    }
+
+    public function findPasswordHash(int $adminId): ?string
+    {
+        $statement = $this->connection->prepare(
+            'SELECT password FROM admin WHERE id_admin = :id LIMIT 1'
+        );
+        $statement->execute([':id' => $adminId]);
+        $password = $statement->fetchColumn();
+
+        return $password === false ? null : (string) $password;
+    }
 }

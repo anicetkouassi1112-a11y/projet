@@ -16,24 +16,6 @@ if (!is_array($activiteImages)) {
     $activiteImages = [];
 }
 
-// Fonction utilitaire (définie dans functions.php, mais on la rappelle ici si besoin)
-if (!function_exists('getActiviteImageByOrder')) {
-    /**
-     * @param int $ordre
-     * @param array $images
-     * @param string $fallback
-     * @return string
-     */
-    function getActiviteImageByOrder($ordre, $images, $fallback = '') {
-        foreach ($images as $image) {
-            if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-                return activiteImageUrl((int) $image['id']);
-            }
-        }
-        return $fallback;
-    }
-}
-
 $heroImage = getActiviteImageByOrder(0, $activiteImages, rtrim($assetBase, '/') . '/img/friend.png');
 $placeImage = getActiviteImageByOrder(1, $activiteImages, rtrim($assetBase, '/') . '/img/office-man.png');
 

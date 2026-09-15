@@ -32,6 +32,29 @@ final class SectionRepository
         return (int) $statement->fetchColumn() > 0;
     }
 
+    /** @return array{id_section:int,nom_section:string,genre:string}|null */
+    public function findById(int $sectionId): ?array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT id_section, nom_section, genre
+             FROM section
+             WHERE id_section = :id
+             LIMIT 1'
+        );
+        $statement->execute([':id' => $sectionId]);
+        $section = $statement->fetch(PDO::FETCH_ASSOC);
+
+        if (!is_array($section)) {
+            return null;
+        }
+
+        return [
+            'id_section' => (int) $section['id_section'],
+            'nom_section' => (string) $section['nom_section'],
+            'genre' => (string) $section['genre'],
+        ];
+    }
+
     /** @return array<string,mixed> */
     public function findAgeOverlap(string $genre, int $ageMin, int $ageMax): array
     {

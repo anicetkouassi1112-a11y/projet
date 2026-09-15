@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-require_once __DIR__ . '/partial/utilitaire.php';
+require_once __DIR__ . '/../Backend/utilitaire.php';
 require_once __DIR__ . '/partial/sections.php'; 
 
 requireRole(['directeur'], 'Auth/login.php');

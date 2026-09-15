@@ -86,14 +86,15 @@ if (!$idInscrit || $idInscrit <= 0) {
 
 // 6. Récupérer les données de l'inscrit
 try {
-    $conn = getConnection();
-} catch (PDOException $e) {
+    $conn = appContainer()->get(PDO::class);
+    $inscriptionRepository = appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class);
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Erreur de connexion a la base de donnees.']);
     exit();
 }
 
-$existing = getInscritById((int) $idInscrit, $conn);
+$existing = $inscriptionRepository->findById((int) $idInscrit);
 if (!$existing) {
     http_response_code(404);
     echo json_encode(['success' => false, 'message' => 'Inscrit introuvable.']);
@@ -164,37 +165,19 @@ try {
     }
 
     $conn->beginTransaction();
-    $stmt = $conn->prepare(
-        'UPDATE utilisateur
-         SET nom = :nom,
-             prenom = :prenom,
-             date_naissance = :date_naissance,
-             genre = :genre,
-             tel = :tel,
-             adresse = :adresse
-         WHERE id_utilisateur = :id_utilisateur'
+    $inscriptionRepository->updateUser(
+        (int) $existing['id_utilisateur'],
+        $nom,
+        $prenom,
+        $dateNaissance,
+        $genre,
+        $tel,
+        $adresse
     );
-    $stmt->execute([
-        ':nom' => $nom,
-        ':prenom' => $prenom,
-        ':date_naissance' => $dateNaissance,
-        ':genre' => $genre,
-        ':tel' => $tel,
-        ':adresse' => $adresse,
-        ':id_utilisateur' => (int) $existing['id_utilisateur'],
-    ]);
 
     // Mise à jour de la section (NULL si aucune section trouvée)
     $idSection = $section ? (int) $section['id_section'] : null;
-    $sectionUpdate = $conn->prepare(
-        'UPDATE inscription
-         SET id_section = :id_section
-         WHERE id_inscription = :id_inscription'
-    );
-    $sectionUpdate->execute([
-        ':id_section' => $idSection,
-        ':id_inscription' => (int) $idInscrit,
-    ]);
+    $inscriptionRepository->updateSection((int) $idInscrit, $idSection);
     
     $conn->commit();
 

@@ -6,6 +6,8 @@ namespace Patro\Animateur;
 
 use Patro\Database\DatabaseConnection;
 use Patro\Domain\Animateur\Repository\AnimateurRepository;
+use Patro\Domain\Configuration\Repository\ConfigurationRepository;
+use Patro\Domain\Inscription\Repository\SessionRepository;
 use Patro\Http\SessionManager;
 use Patro\Security\CsrfProtection;
 use PDO;
@@ -20,17 +22,23 @@ class AnimateurService
     private const VALID_GENRES = ['M', 'F'];
 
     private AnimateurRepository $repository;
+    private SessionRepository $sessionRepository;
+    private ConfigurationRepository $configurationRepository;
     private SessionManager $session;
 
     public function __construct(
         private ?PDO $connection = null,
         ?AnimateurRepository $repository = null,
-        ?SessionManager $session = null
+        ?SessionManager $session = null,
+        ?SessionRepository $sessionRepository = null,
+        ?ConfigurationRepository $configurationRepository = null
     )
     {
         $this->connection ??= DatabaseConnection::getConnection();
         $this->repository = $repository ?? new AnimateurRepository($this->connection);
         $this->session = $session ?? new SessionManager();
+        $this->sessionRepository = $sessionRepository ?? new SessionRepository($this->connection);
+        $this->configurationRepository = $configurationRepository ?? new ConfigurationRepository($this->connection);
     }
 
     /**
@@ -56,10 +64,7 @@ class AnimateurService
     {
         for ($attempt = 0; $attempt < 10; $attempt++) {
             $code = $this->generateAnimateurCodeValue($length);
-            $stmt = $connect->prepare('SELECT COUNT(*) FROM code_inscription_animateur WHERE code = :code');
-            $stmt->execute([':code' => $code]);
-
-            if ((int) $stmt->fetchColumn() === 0) {
+            if (!$this->repository->codeExists($code)) {
                 return $code;
             }
         }
@@ -85,19 +90,9 @@ class AnimateurService
 
         try {
             $connect->beginTransaction();
-            $insert = $connect->prepare(
-                'INSERT INTO code_inscription_animateur (code, id_session, id_admin, date_expiration)
-                 VALUES (:code, :id_session, :id_admin, :date_expiration)'
-            );
-
             for ($i = 0; $i < $quantite; $i++) {
                 $code = $this->createUniqueAnimateurCode($connect, $this->getCodeLength());
-                $insert->execute([
-                    ':code' => $code,
-                    ':id_session' => $idSession,
-                    ':id_admin' => $idAdmin,
-                    ':date_expiration' => $dateExpiration ?: null,
-                ]);
+                $this->repository->createCode($code, $idSession, $idAdmin, $dateExpiration);
                 $codes[] = $code;
             }
 
@@ -155,15 +150,7 @@ class AnimateurService
 
             $currentSessionId = $this->getCurrentAnimateurSessionId($connect);
             
-            $stmt = $connect->prepare(
-                'SELECT c.*
-                 FROM code_inscription_animateur c
-                 WHERE c.code = :code
-                 LIMIT 1
-                 FOR UPDATE'
-            );
-            $stmt->execute([':code' => $code]);
-            $codeRow = $stmt->fetch(PDO::FETCH_ASSOC);
+            $codeRow = $this->repository->findCodeForUpdate($code);
 
             if (!$codeRow || (string) $codeRow['statut'] !== 'disponible') {
                 $connect->rollBack();
@@ -184,9 +171,7 @@ class AnimateurService
                 return ['success' => false, 'message' => 'Ce code ne correspond pas a la session en cours.', 'alert_type' => 'warning'];
             }
 
-            $find = $connect->prepare('SELECT id_animateur, nom_a, prenom_a, genre_a, tel, password, statut, created_at, updated_at FROM animateur WHERE tel = :tel LIMIT 1 FOR UPDATE');
-            $find->execute([':tel' => $tel]);
-            $animateur = $find->fetch(PDO::FETCH_ASSOC);
+            $animateur = $this->repository->findByPhoneForUpdate($tel);
             $warning = '';
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
@@ -199,56 +184,29 @@ class AnimateurService
                     $warning = ' Le nom ou le prenom differe de la fiche existante.';
                 }
 
-                $update = $connect->prepare(
-                    'UPDATE animateur
-                     SET nom_a = :nom,
-                         prenom_a = :prenom,
-                         genre_a = :genre,
-                         password = :password,
-                         statut = "actif"
-                     WHERE id_animateur = :id_animateur'
+                $this->repository->updateFromRegistration(
+                    $idAnimateur,
+                    $nom,
+                    $prenom,
+                    $genre,
+                    $passwordHash
                 );
-                $update->execute([
-                    ':nom' => $nom,
-                    ':prenom' => $prenom,
-                    ':genre' => $genre,
-                    ':password' => $passwordHash,
-                    ':id_animateur' => $idAnimateur,
-                ]);
             } else {
-                $insert = $connect->prepare(
-                    'INSERT INTO animateur (nom_a, prenom_a, genre_a, tel, password, statut)
-                     VALUES (:nom, :prenom, :genre, :tel, :password, "actif")'
+                $idAnimateur = $this->repository->create(
+                    $nom,
+                    $prenom,
+                    $genre,
+                    $tel,
+                    $passwordHash
                 );
-                $insert->execute([
-                    ':nom' => $nom,
-                    ':prenom' => $prenom,
-                    ':genre' => $genre,
-                    ':tel' => $tel,
-                    ':password' => $passwordHash,
-                ]);
-                $idAnimateur = (int) $connect->lastInsertId();
             }
 
-            $sessionInsert = $connect->prepare(
-                'INSERT INTO animateur_session (id_animateur, id_session, id_code, id_section)
-                 VALUES (:id_animateur, :id_session, :id_code, NULL)'
+            $this->repository->attachToSession(
+                $idAnimateur,
+                (int) $codeRow['id_session'],
+                (int) $codeRow['id_code']
             );
-            $sessionInsert->execute([
-                ':id_animateur' => $idAnimateur,
-                ':id_session' => (int) $codeRow['id_session'],
-                ':id_code' => (int) $codeRow['id_code'],
-            ]);
-
-            $consume = $connect->prepare(
-                'UPDATE code_inscription_animateur
-                 SET statut = "utilise", id_animateur = :id_animateur, utilise_le = CURRENT_TIMESTAMP
-                 WHERE id_code = :id_code'
-            );
-            $consume->execute([
-                ':id_animateur' => $idAnimateur,
-                ':id_code' => (int) $codeRow['id_code'],
-            ]);
+            $this->repository->consumeCode((int) $codeRow['id_code'], $idAnimateur);
 
             $connect->commit();
             $this->session->remove('animateur_code_attempts');
@@ -463,56 +421,18 @@ class AnimateurService
     {
         $connect = $connect ?: $this->connection;
         $typeSession = $this->normalizeSessionType($typeSession);
-        $anneeId = $this->ensureAnnee($anneeVal, $connect);
-
-        $stmt = $connect->prepare(
-            'INSERT INTO session (annee_id, type_session) VALUES (:annee_id, :type_session)
-             ON DUPLICATE KEY UPDATE type_session = VALUES(type_session)'
-        );
-        $stmt->execute([
-            ':annee_id' => $anneeId,
-            ':type_session' => $typeSession,
-        ]);
-
-        $select = $connect->prepare(
-            'SELECT id_session FROM session WHERE annee_id = :annee_id AND type_session = :type_session LIMIT 1'
-        );
-        $select->execute([
-            ':annee_id' => $anneeId,
-            ':type_session' => $typeSession,
-        ]);
-        $id = $select->fetchColumn();
-
-        if ($id === false) {
-            throw new RuntimeException('Session introuvable.');
-        }
-
-        return (int) $id;
+        return $this->sessionRepository->ensureSession($anneeVal, $typeSession);
     }
 
     private function ensureAnnee(int $anneeVal, PDO $connect): int
     {
-        $stmt = $connect->prepare(
-            'INSERT INTO annee (ans) VALUES (:annee) ON DUPLICATE KEY UPDATE ans = VALUES(ans)'
-        );
-        $stmt->execute([':annee' => $anneeVal]);
-
-        $stmt = $connect->prepare('SELECT idannee FROM annee WHERE ans = :annee LIMIT 1');
-        $stmt->execute([':annee' => $anneeVal]);
-        $id = $stmt->fetchColumn();
-
-        return (int) $id;
+        return $this->sessionRepository->ensureYear($anneeVal);
     }
 
     private function getConfig(string $key, ?string $default = null): ?string
     {
         try {
-            $stmt = $this->connection->prepare(
-                'SELECT config_value FROM configurations WHERE config_key = :key LIMIT 1'
-            );
-            $stmt->execute([':key' => $key]);
-            $value = $stmt->fetchColumn();
-            return $value === false ? $default : (string) $value;
+            return $this->configurationRepository->find($key, $default);
         } catch (PDOException $e) {
             error_log('Get config error: ' . $e->getMessage());
             return $default;
