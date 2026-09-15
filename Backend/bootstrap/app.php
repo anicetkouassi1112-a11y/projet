@@ -19,6 +19,7 @@ use Patro\Domain\Inscription\Repository\InscriptionRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
+use Patro\Application\Inscription\ModifierInscrit;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
 use Patro\Application\Animateur\AuthentifierAnimateur;
@@ -86,6 +87,10 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
         $container->get(InscriptionRepository::class),
         $container->get(SectionRepository::class),
         $container->get(SessionRepository::class),
+        $container->get(PdoTransactionManager::class)
+    ));
+    $container->singleton(ModifierInscrit::class, static fn (Container $container): ModifierInscrit => new ModifierInscrit(
+        $container->get(InscriptionRepository::class),
         $container->get(PdoTransactionManager::class)
     ));
     $container->singleton(SessionService::class, static fn (Container $container): SessionService => new SessionService(
