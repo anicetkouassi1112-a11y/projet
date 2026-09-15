@@ -710,17 +710,6 @@ function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null)
         ->ensureSession($anneeVal, $typeSession);
 }
 
-// Session animateur de reference pour les formulaires publics.
-function currentAnimateurSessionId(?PDO $connect = null): int
-{
-    $annee = (int) ($_SESSION['annee_active'] ?? date('Y'));
-    if ($annee < 2000 || $annee > 2100) {
-        $annee = (int) date('Y');
-    }
-
-    return ensureSession($annee, currentSessionType(), $connect);
-}
-
 function sessionLabelById(int $idSession, ?PDO $connect = null): string
 {
     return appContainer()
@@ -742,20 +731,6 @@ function getAllSections(?PDO $connect = null): array
         ->getAllSections();
 }
 
-function nomSectionExiste(string $nom, ?PDO $connect = null): bool
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->nomSectionExiste($nom);
-}
-
-function titreExiste(string $titre, ?PDO $connect = null, ?int $sessionId = null): bool
-{
-    $sessionId = $sessionId ?: getActiveAdminSessionId();
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\ThemeRepository::class)
-        ->existsByTitle($titre, $sessionId);
-}
 function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
 {
     return appContainer()
@@ -776,13 +751,6 @@ function creerSection(string $nomSection, string $description = '', string $genr
             $ageMin === false ? 0 : (int) $ageMin,
             $ageMax === false ? 0 : (int) $ageMax
         );
-}
-
-function sessionExists(int $idSession, ?PDO $connect = null): bool
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->sessionExists($idSession);
 }
 
 function Addtheme(string $titre, int $sessionId): array
@@ -991,25 +959,6 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
         ->findMatchingSection($genre, $age, $typeSession);
 }
 
-function determineSection(string $genre, string $dateNaissance, ?int $referenceYear = null, ?string $typeSession = null): ?string
-{
-    $matchedSection = findMatchingSection($genre, $dateNaissance, $referenceYear, null, $typeSession);
-    return $matchedSection ? (string) $matchedSection['nom_section'] : null;
-}
-function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAnneeIdByValue($anneeVal);
-}
-
-function getAnneeValueById(int $anneeId, ?PDO $connect = null): ?int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->getAnneeValueById($anneeId);
-}
-
 function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
 {
     return appContainer()
@@ -1038,21 +987,6 @@ function canAccessPublicInscrit(int $idInscrit): bool
     }
 
     return isset($_SESSION['last_inscrit_id']) && (int) $_SESSION['last_inscrit_id'] === $idInscrit;
-}
-
-function findInscritIdByIdentity(
-    string $nom,
-    string $prenom,
-    string $dateNaissance,
-    int $anneeId,
-    string $typeSession,
-    ?PDO $connect = null
-): ?int
-{
-    $typeSession = normalizeSessionType($typeSession);
-    return appContainer()
-        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession);
 }
 
 function identifierLookupKey(string $value): string
@@ -1147,102 +1081,6 @@ function genreCodeForIdentifier(string $genre): string
  * Genere l'identifiant metier SECTION-GENRE-ORDRE avec un compteur SQL verrouille.
  * Cette fonction doit etre appelee dans une transaction ouverte.
  */
-function generateNextInscritIdentifiant(PDO $connect, ?string $section, string $genre, int $digits = 3): array
-{
-    $digits = max(1, $digits);
-    $genreCode = genreCodeForIdentifier($genre);
-    $section = trim((string) $section);
-    $hasSection = $section !== '';
-    $sectionCode = $hasSection ? sectionCodeForIdentifier($section) : null;
-    $sequenceName = $hasSection
-        ? sprintf('inscrits:%s:%s', $sectionCode, $genreCode)
-        : sprintf('inscrits:GEN:%s', $genreCode);
-
-    if ($hasSection) {
-        $connect->prepare(
-            'INSERT INTO identifiant_sequences (sequence_name, last_number)
-             SELECT :sequence_name, GREATEST(
-                 COUNT(*),
-                 COALESCE(MAX(CAST(SUBSTRING_INDEX(identifiant, "-", -1) AS UNSIGNED)), 0)
-             )
-             FROM inscription i
-             INNER JOIN section s ON s.id_section = i.id_section
-             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-             WHERE s.nom_section = :section
-               AND u.genre = :genre
-             ON DUPLICATE KEY UPDATE sequence_name = sequence_name'
-        )->execute([
-            ':sequence_name' => $sequenceName,
-            ':section' => $section,
-            ':genre' => $genre,
-        ]);
-    } else {
-        // Session scolaire: pas de section, le compteur est partage par genre uniquement.
-        $connect->prepare(
-            'INSERT INTO identifiant_sequences (sequence_name, last_number)
-             SELECT :sequence_name, GREATEST(
-                 COUNT(*),
-                 COALESCE(MAX(CAST(SUBSTRING_INDEX(identifiant, "-", -1) AS UNSIGNED)), 0)
-             )
-             FROM inscription i
-             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-             WHERE i.id_section IS NULL
-               AND u.genre = :genre
-             ON DUPLICATE KEY UPDATE sequence_name = sequence_name'
-        )->execute([
-            ':sequence_name' => $sequenceName,
-            ':genre' => $genre,
-        ]);
-    }
-
-    // FOR UPDATE verrouille la ligne du compteur jusqu'au COMMIT.
-    $stmt = $connect->prepare(
-        'SELECT last_number
-         FROM identifiant_sequences
-         WHERE sequence_name = :sequence_name
-         FOR UPDATE'
-    );
-    $stmt->execute([':sequence_name' => $sequenceName]);
-    $lastNumber = $stmt->fetchColumn();
-
-    if ($lastNumber === false) {
-        throw new RuntimeException('Compteur d identifiants introuvable.');
-    }
-
-    $nextNumber = (int) $lastNumber + 1;
-    if (strlen((string) $nextNumber) > $digits) {
-        throw new RuntimeException('La largeur configuree pour l ordre d inscription est depassee.');
-    }
-
-    $update = $connect->prepare(
-        'UPDATE identifiant_sequences
-         SET last_number = :last_number
-         WHERE sequence_name = :sequence_name'
-    );
-    $update->execute([
-        ':last_number' => $nextNumber,
-        ':sequence_name' => $sequenceName,
-    ]);
-
-    $identifiant = $hasSection
-        ? sprintf(
-            '%s-%s-%s',
-            $sectionCode,
-            $genreCode,
-            str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT)
-        )
-        : sprintf(
-            '%s-%s',
-            $genreCode,
-            str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT)
-        );
-
-    return [
-        'identifiant' => $identifiant,
-        'ordre_inscription' => $nextNumber,
-    ];
-}
-
 /**
  * Valide les donnees, genere l'identifiant metier et insere l'inscrit en une transaction PDO.
  */
@@ -1258,205 +1096,17 @@ function enregistrerInscrit(
     ?int $annee = null
 ): array {
     requireCsrfToken();
-
-    $container = $GLOBALS['patro_container'] ?? null;
-    if ($container instanceof \Patro\Shared\Container
-        && $container->has(\Patro\Application\Inscription\EnregistrerInscrit::class)) {
-        $command = new \Patro\Application\Inscription\EnregistrerInscritCommand(
-            $nom,
-            $prenom,
-            $dateNaissance,
-            $genre,
-            $tel,
-            $adresse,
-            $prixChoisi,
-            $tailleTeeShirt,
-            $annee ?: (int) date('Y'),
-            currentSessionType(),
-            inscriptionBaseAmount(),
-            teeShirtPrice(),
-            sectionBreakdownEnabled(currentSessionType()),
-            app_int('IDENTIFIANT_ORDER_DIGITS', 3)
-        );
-
-        return $container->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute($command);
-    }
-    
-    $nom = appCleanText($nom, 120);
-    $prenom = appCleanText($prenom, 120);
-    $dateNaissance = trim($dateNaissance);
-    $genre = normalizeGenre($genre);
-    $tel = normalizeIvorianPhone($tel);
-    $adresse = appCleanText($adresse, 180);
-    $prixChoisi = trim($prixChoisi);
-    $tailleTeeShirt = normalizeTeeShirtSize($tailleTeeShirt);
-    $annee = $annee ?: (int) date('Y');
     $typeSession = currentSessionType();
-    $montantBase = inscriptionBaseAmount();
-    $prixTeeShirtConfigure = teeShirtPrice();
-    $montantAvecTeeShirt = $montantBase + $prixTeeShirtConfigure;
-    $montantInscription = 0;
-    $prixTeeShirt = 0;
 
-    if ($nom === '' || $prenom === '' || $dateNaissance === '' || $genre === '' || $tel === '' || $adresse === '') {
-        return ['success' => false, 'message' => 'Veuillez remplir tous les champs obligatoires.', 'alert_type' => 'danger'];
-    }
-
-    if (!in_array($genre, validGenres(), true)) {
-        return ['success' => false, 'message' => 'Genre invalide.', 'alert_type' => 'danger'];
-    }
-
-    if (!isValidDateString($dateNaissance)) {
-        return ['success' => false, 'message' => 'Date de naissance invalide.', 'alert_type' => 'danger'];
-    }
-
-    if (!isValidIvorianPhone($tel)) {
-        return ['success' => false, 'message' => 'Numero de telephone ivoirien invalide.', 'alert_type' => 'danger'];
-    }
-
-    if ($prixChoisi === (string) $montantBase) {
-        $montantInscription = $montantBase;
-        $tailleTeeShirt = '';
-    } elseif ($prixChoisi === (string) $montantAvecTeeShirt) {
-        $montantInscription = $montantBase;
-        $prixTeeShirt = $prixTeeShirtConfigure;
-        if ($tailleTeeShirt === '') {
-            return ['success' => false, 'message' => 'Veuillez selectionner la taille du tee-shirt.', 'alert_type' => 'warning'];
-        }
-    } else {
-        return ['success' => false, 'message' => 'Montant d inscription invalide.', 'alert_type' => 'danger'];
-    }
-
-    $age = calculateAge($dateNaissance, $annee);
-    if ($age === null) {
-        return ['success' => false, 'message' => 'Date de naissance invalide.', 'alert_type' => 'danger'];
-    }
-
-    if ($age >= 25) {
-        return ['success' => false, 'message' => 'Aucune inscription n\'est autorisé pour un age supérieur ou égale à 25 ans. Toutefois, vous pouvez vous inscrit en tant qu\'animateur. Pour plus information veuillez-vous rendre en présentiel.', 'alert_type' => 'warning'];
-    }
-
-    $section = findMatchingSection($genre, $dateNaissance, $annee, null, $typeSession);
-    if ($section === null && sectionBreakdownEnabled($typeSession)) {
-        return ['success' => false, 'message' => 'Aucune secion ne correspond a cet age et ce genre. Veuillez contacter l administrateur.', 'alert_type' => 'danger'];
-    }
-
-    $nomSection = $section['nom_section'] ?? null;
-    $idSection = isset($section['id_section']) ? (int) $section['id_section'] : null;
-
-    $connect = getConnection();
-
-    try {
-        $connect->beginTransaction();
-
-        $idSession = ensureSession($annee, $typeSession, $connect);
-        $anneeId = ensureAnnee($annee, $connect);
-        $existingId = findInscritIdByIdentity($nom, $prenom, $dateNaissance, $anneeId, $typeSession, $connect);
-
-        if ($existingId !== null) {
-            $connect->commit();
-            return [
-                'success' => false,
-                'message' => 'Cette personne est deja inscrite pour cette annee et ce type de session.',
-                'alert_type' => 'warning',
-                'id_inscrit' => $existingId,
-            ];
-        }
-
-        $generatedIdentifier = generateNextInscritIdentifiant(
-            $connect,
-            $nomSection,
-            $genre,
+    return appContainer()->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute(
+        new \Patro\Application\Inscription\EnregistrerInscritCommand(
+            $nom, $prenom, $dateNaissance, $genre, $tel, $adresse, $prixChoisi,
+            $tailleTeeShirt, $annee ?: (int) date('Y'), $typeSession,
+            inscriptionBaseAmount(), teeShirtPrice(), sectionBreakdownEnabled($typeSession),
             app_int('IDENTIFIANT_ORDER_DIGITS', 3)
-        );
-
-        $userStmt = $connect->prepare(
-            'INSERT INTO utilisateur (nom, prenom, date_naissance, genre, tel, adresse)
-             VALUES (:nom, :prenom, :date_naissance, :genre, :tel, :adresse)
-             ON DUPLICATE KEY UPDATE
-                id_utilisateur = LAST_INSERT_ID(id_utilisateur),
-                genre = VALUES(genre),
-                tel = VALUES(tel),
-                adresse = VALUES(adresse),
-                updated_at = NOW()'
-        );
-        $userStmt->execute([
-            ':nom' => $nom,
-            ':prenom' => $prenom,
-            ':date_naissance' => $dateNaissance,
-            ':genre' => $genre,
-            ':tel' => $tel,
-            ':adresse' => $adresse,
-        ]);
-        $idUtilisateur = (int) $connect->lastInsertId();
-
-        $stmt = $connect->prepare(
-            'INSERT INTO inscription (identifiant, id_utilisateur, id_session, id_section, montant_inscription, prix_tee_shirt, taille_tee_shirt, etat)
-             VALUES (:identifiant, :id_utilisateur, :id_session, :id_section, :montant_inscription, :prix_tee_shirt, :taille_tee_shirt, :etat)'
-        );
-        $stmt->execute([
-            ':identifiant' => $generatedIdentifier['identifiant'],
-            ':id_utilisateur' => $idUtilisateur,
-            ':id_session' => $idSession,
-            ':id_section' => $idSection,
-            ':montant_inscription' => $montantInscription,
-            ':prix_tee_shirt' => $prixTeeShirt,
-            ':taille_tee_shirt' => $tailleTeeShirt !== '' ? $tailleTeeShirt : null,
-            ':etat' => 'En attente',
-        ]);
-
-        $idInscrit = (int) $connect->lastInsertId();
-        $connect->commit();
-
-        return [
-            'success' => true,
-            'message' => 'Inscription enregistree avec succes.',
-            'alert_type' => 'success',
-            'id_inscrit' => $idInscrit,
-            'identifiant' => $generatedIdentifier['identifiant'],
-            'ordre_inscription' => $generatedIdentifier['ordre_inscription'],
-            'section' => $nomSection,
-            'id_section' => $idSection,
-            'montant_inscription' => $montantInscription,
-            'prix_tee_shirt' => $prixTeeShirt,
-            'taille_tee_shirt' => $tailleTeeShirt,
-            'annee_id' => $anneeId,
-            'type_session' => $typeSession,
-        ];
-    } catch (PDOException $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Register inscrit error: ' . $e->getMessage());
-
-        if ($e->getCode() === '23000') {
-            $message = $e->getMessage();
-            if (stripos($message, "key 'inscrits.tel'") !== false || stripos($message, "key 'tel'") !== false) {
-                return [
-                    'success' => false,
-                    'message' => 'Ce numero de telephone est deja utilise. Si plusieurs enfants partagent ce numero, appliquez la migration de base de donnees pour retirer l ancienne contrainte unique sur tel.',
-                    'alert_type' => 'warning',
-                ];
-            }
-
-            return [
-                'success' => false,
-                'message' => 'Cette inscription existe deja ou viole une contrainte unique.',
-                'alert_type' => 'warning',
-            ];
-        }
-
-        return ['success' => false, 'message' => 'Erreur base de donnees pendant l inscription.', 'alert_type' => 'danger'];
-    } catch (Throwable $e) {
-        if ($connect->inTransaction()) {
-            $connect->rollBack();
-        }
-        error_log('Register inscrit error: ' . $e->getMessage());
-
-        return ['success' => false, 'message' => 'Erreur pendant la generation de l identifiant.', 'alert_type' => 'danger'];
-    }
+        )
+    );
 }
-
 function nextRegistrationStepUrl(int $idInscrit): string
 {
     return app_url('public/auth/confirmation_enregistrement.php') . '?' . http_build_query(['inscrit_id' => $idInscrit]);

@@ -157,6 +157,36 @@ final class InscriptionRepository
         return $statement->rowCount() > 0;
     }
 
+    public function updateParticipant(
+        int $userId,
+        string $lastName,
+        string $firstName,
+        string $birthDate,
+        string $gender,
+        string $phone,
+        string $address
+    ): void {
+        $statement = $this->connection->prepare(
+            'UPDATE utilisateur
+             SET nom = :last_name, prenom = :first_name, date_naissance = :birth_date,
+                 genre = :gender, tel = :phone, adresse = :address
+             WHERE id_utilisateur = :id'
+        );
+        $statement->execute([
+            ':last_name' => $lastName, ':first_name' => $firstName,
+            ':birth_date' => $birthDate, ':gender' => $gender,
+            ':phone' => $phone, ':address' => $address, ':id' => $userId,
+        ]);
+    }
+
+    public function updateSection(int $inscriptionId, ?int $sectionId): void
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription SET id_section = :section_id WHERE id_inscription = :id'
+        );
+        $statement->execute([':section_id' => $sectionId, ':id' => $inscriptionId]);
+    }
+
     /** @return list<array<string,mixed>> */
     public function findPending(int $yearId, string $sessionType, ?string $term = null): array
     {

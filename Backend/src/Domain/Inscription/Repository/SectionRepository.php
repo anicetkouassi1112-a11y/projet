@@ -94,4 +94,15 @@ final class SectionRepository
 
         return $section ?: null;
     }
+
+    public function findGenreById(int $sectionId): ?string
+    {
+        $statement = $this->connection->prepare(
+            'SELECT genre FROM section WHERE id_section = :id LIMIT 1'
+        );
+        $statement->execute([':id' => $sectionId]);
+        $value = $statement->fetchColumn();
+
+        return $value === false ? null : (string) $value;
+    }
 }

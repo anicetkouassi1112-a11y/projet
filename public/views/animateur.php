@@ -9,21 +9,9 @@ $animateur = currentAnimateur();
 $sectionName = (string) ($animateur['nom_section'] ?? 'Section');
 $idSection = (int) ($animateur['id_section'] ?? 0);
 
-$connect = getConnection();
-
-// 1. On récupère directement le genre de la section en base de données
-$stmtGenre = $connect->prepare("SELECT genre FROM section WHERE id_section = :id LIMIT 1");
-$stmtGenre->execute([':id' => $idSection]);
-$genreSection = strtolower(trim((string) $stmtGenre->fetchColumn()));
-
-// 2. Récupérer les différents types de jeux et le nombre de jeux par type
-$stmtJeux = $connect->query(
-    "SELECT type_jeu, COUNT(id) as total 
-     FROM jeux 
-     GROUP BY type_jeu 
-     ORDER BY type_jeu ASC"
-);
-$typesJeux = $stmtJeux->fetchAll(PDO::FETCH_ASSOC);
+$catalog = appContainer()->get(\Patro\Application\Animateur\AnimateurGameCatalog::class)->execute($idSection);
+$genreSection = $catalog['genre'];
+$typesJeux = $catalog['types'];
 
 // 3. Titre de l'onglet dynamique selon le genre
 $pageTitle = ($genreSection === 'fille') 

@@ -143,89 +143,43 @@ if (!isValidIvorianPhone($tel)) {
     exit();
 }
 
-// 10. Mise à jour
-try {
-    $annee = (int) ($existing['annee'] ?? date('Y'));
-    $age = calculateAge($dateNaissance, $annee);
-    if ($age === null) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'Age invalide pour une inscription patronier.']);
-        exit();
-    }
-
-    // Recherche de la section correspondante (peut retourner null en session scolaire)
-    $section = findMatchingSection($genre, $dateNaissance, $annee, $conn, $typeSession);
-    
-    // Erreur uniquement si la session nécessite une section ET qu'aucune n'est trouvée
-    if ($section === null && sectionBreakdownEnabled($typeSession)) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);
-        exit();
-    }
-
-    $conn->beginTransaction();
-    $stmt = $conn->prepare(
-        'UPDATE utilisateur
-         SET nom = :nom,
-             prenom = :prenom,
-             date_naissance = :date_naissance,
-             genre = :genre,
-             tel = :tel,
-             adresse = :adresse
-         WHERE id_utilisateur = :id_utilisateur'
-    );
-    $stmt->execute([
-        ':nom' => $nom,
-        ':prenom' => $prenom,
-        ':date_naissance' => $dateNaissance,
-        ':genre' => $genre,
-        ':tel' => $tel,
-        ':adresse' => $adresse,
-        ':id_utilisateur' => (int) $existing['id_utilisateur'],
-    ]);
-
-    // Mise à jour de la section (NULL si aucune section trouvée)
-    $idSection = $section ? (int) $section['id_section'] : null;
-    $sectionUpdate = $conn->prepare(
-        'UPDATE inscription
-         SET id_section = :id_section
-         WHERE id_inscription = :id_inscription'
-    );
-    $sectionUpdate->execute([
-        ':id_section' => $idSection,
-        ':id_inscription' => (int) $idInscrit,
-    ]);
-    
-    $conn->commit();
-
-    if (ob_get_length()) {
-        ob_clean();
-    }
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Inscrit mis a jour avec succes.',
-        'genre' => $genre,
-        'section' => $section ? (string) $section['nom_section'] : null,
-    ], JSON_UNESCAPED_UNICODE);
-
-} catch (PDOException $e) {
-    if (isset($conn) && $conn->inTransaction()) {
-        $conn->rollBack();
-    }
-    error_log('Update inscrit error: ' . $e->getMessage());
-    
-    if (ob_get_length()) { ob_clean(); }
-    
-    if ($e->getCode() === '23000') {
-        http_response_code(409);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Un inscrit existe deja avec cette identite pour cette annee et cette session.',
-        ], JSON_UNESCAPED_UNICODE);
-        exit();
-    }
-
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erreur base de donnees pendant la mise a jour.']);
+// 10. Mise a jour via le cas d usage applicatif
+$annee = (int) ($existing['annee'] ?? date('Y'));
+$age = calculateAge($dateNaissance, $annee);
+if ($age === null) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Age invalide pour une inscription patronier.']);
+    exit();
 }
+
+$section = findMatchingSection($genre, $dateNaissance, $annee, null, $typeSession);
+if ($section === null && sectionBreakdownEnabled($typeSession)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);
+    exit();
+}
+
+$result = appContainer()->get(\Patro\Application\Inscription\ModifierInscrit::class)->execute(
+    new \Patro\Application\Inscription\ModifierInscritCommand(
+        (int) $idInscrit,
+        (int) $existing['id_utilisateur'],
+        $nom, $prenom, $dateNaissance, $genre, $tel, $adresse,
+        $section ? (int) $section['id_section'] : null
+    )
+);
+if (!$result['success']) {
+    http_response_code(500);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+if (ob_get_length()) {
+    ob_clean();
+}
+
+echo json_encode([
+    'success' => true,
+    'message' => $result['message'],
+    'genre' => $genre,
+    'section' => $section ? (string) $section['nom_section'] : null,
+], JSON_UNESCAPED_UNICODE);
