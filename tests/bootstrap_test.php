@@ -22,6 +22,7 @@ $requiredServices = [
     Patro\Domain\Animateur\Repository\AnimateurRepository::class,
     Patro\Domain\Statistics\Repository\StatisticsRepository::class,
     Patro\Domain\Inscription\Repository\InscriptionRepository::class,
+    Patro\Domain\Inscription\Repository\BackupRepository::class,
     Patro\Infrastructure\Database\PdoTransactionManager::class,
     Patro\Application\Inscription\EnregistrerInscrit::class,
     Patro\Application\Inscription\ModifierInscrit::class,

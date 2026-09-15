@@ -16,6 +16,7 @@ use Patro\Domain\Inscription\Repository\SectionRepository;
 use Patro\Domain\Inscription\Repository\SessionRepository;
 use Patro\Domain\Inscription\Repository\ThemeRepository;
 use Patro\Domain\Inscription\Repository\InscriptionRepository;
+use Patro\Domain\Inscription\Repository\BackupRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
@@ -80,6 +81,7 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(AnimateurRepository::class, static fn (Container $container): AnimateurRepository => new AnimateurRepository($container->get(PDO::class)));
     $container->singleton(StatisticsRepository::class, static fn (Container $container): StatisticsRepository => new StatisticsRepository($container->get(PDO::class)));
     $container->singleton(InscriptionRepository::class, static fn (Container $container): InscriptionRepository => new InscriptionRepository($container->get(PDO::class)));
+    $container->singleton(BackupRepository::class, static fn (Container $container): BackupRepository => new BackupRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
     $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
     $container->singleton(CinetPayTransactionRepository::class, static fn (Container $container): CinetPayTransactionRepository => new CinetPayTransactionRepository($container->get(PDO::class)));
