@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Patro\Auth;
 
 use Patro\Config\Environment;
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Admin\Repository\AdminRepository;
 use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
-use PDO;
 use PDOException;
 
 /**
@@ -120,7 +118,7 @@ class AdminAuth
             return $container->get(AdminRepository::class);
         }
 
-        return new AdminRepository(DatabaseConnection::getConnection());
+        throw new \RuntimeException('Repository administrateur non enregistré dans le conteneur Patro.');
     }
 
     /**

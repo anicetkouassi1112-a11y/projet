@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Patro\Inscription;
 
-use Patro\Database\DatabaseConnection;
 use Patro\Domain\Inscription\Repository\ThemeRepository;
 use Patro\Security\CsrfProtection;
 use PDO;
@@ -20,14 +19,14 @@ class ThemeService
     private ThemeRepository $repository;
 
     public function __construct(
-        ?SessionService $sessionService = null,
-        ?PDO $connection = null,
-        ?ThemeRepository $repository = null
+        SessionService $sessionService,
+        PDO $connection,
+        ThemeRepository $repository
     )
     {
-        $this->sessionService = $sessionService ?? new SessionService();
-        $this->connection = $connection ?? DatabaseConnection::getConnection();
-        $this->repository = $repository ?? new ThemeRepository($this->connection);
+        $this->sessionService = $sessionService;
+        $this->connection = $connection;
+        $this->repository = $repository;
     }
 
     /**

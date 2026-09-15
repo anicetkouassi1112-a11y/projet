@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Patro\Config\Environment;
-use Patro\Database\DatabaseConnection;
 use Patro\Http\ErrorHandler;
 use Patro\Http\SessionManager;
 use Patro\Inscription\SectionService;
@@ -29,7 +28,9 @@ use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
 use Patro\Domain\Jeu\Repository\JeuRepository;
 use Patro\Domain\Activite\Repository\ActiviteImageRepository;
+use Patro\Domain\Paiement\Repository\CinetPayTransactionRepository;
 use Patro\Shared\Container;
+use Patro\Paiement\CinetPayService;
 
 $autoloadPath = dirname(__DIR__) . '/vendor/autoload.php';
 if (is_file($autoloadPath)) {
@@ -86,6 +87,7 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(InscriptionRepository::class, static fn (Container $container): InscriptionRepository => new InscriptionRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
     $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
+    $container->singleton(CinetPayTransactionRepository::class, static fn (Container $container): CinetPayTransactionRepository => new CinetPayTransactionRepository($container->get(PDO::class)));
     $container->singleton(EnregistrerInscrit::class, static fn (Container $container): EnregistrerInscrit => new EnregistrerInscrit(
         $container->get(InscriptionRepository::class),
         $container->get(SectionRepository::class),
@@ -105,6 +107,10 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
         $container->get(SessionService::class),
         $container->get(PDO::class),
         $container->get(ThemeRepository::class)
+    ));
+    $container->singleton(CinetPayService::class, static fn (Container $container): CinetPayService => new CinetPayService(
+        $container->get(InscriptionRepository::class),
+        $container->get(CinetPayTransactionRepository::class)
     ));
     $container->singleton(SessionManager::class, static fn (): SessionManager => new SessionManager());
     $container->singleton(ErrorHandler::class, static fn (): ErrorHandler => new ErrorHandler());

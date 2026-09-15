@@ -374,37 +374,7 @@ function getConnection(): PDO
         return $container->get(PDO::class);
     }
 
-    if (class_exists('\Patro\Database\DatabaseConnection')) {
-        return \Patro\Database\DatabaseConnection::getConnection();
-    }
-    
-    static $conn = null;
-
-    if ($conn instanceof PDO) {
-        return $conn;
-    }
-
-    $host = (string) app_env('DB_HOST', 'localhost');
-    $db = (string) app_env('DB_NAME', 'projet_db');
-    $user = (string) app_env('DB_USER', 'root');
-    $pass = (string) app_env('DB_PASS', '');
-    $charset = (string) app_env('DB_CHARSET', 'utf8mb4');
-
-    $dsn = "mysql:host={$host};dbname={$db};charset={$charset}";
-    $options = [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ];
-
-    try {
-        $conn = new PDO($dsn, $user, $pass, $options);
-        return $conn;
-    } catch (PDOException $e) {
-        error_log('Database connection error: ' . $e->getMessage());
-        http_response_code(500);
-        exit('Erreur de connexion a la base de donnees.');
-    }
+    throw new RuntimeException('Connexion PDO non enregistrée dans le conteneur Patro.');
 }
 
 /**
@@ -784,7 +754,7 @@ function setConfig(string $key, ?string $value): bool
 function ensureSession(int $anneeVal, string $typeSession, ?PDO $connect = null): int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->ensureSession($anneeVal, $typeSession);
     }
     
@@ -835,7 +805,7 @@ function currentAnimateurSessionId(?PDO $connect = null): int
 function sessionLabelById(int $idSession, ?PDO $connect = null): string
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->sessionLabelById($idSession);
     }
     
@@ -860,7 +830,7 @@ function sessionLabelById(int $idSession, ?PDO $connect = null): string
 function getAllSessions(?PDO $connect = null): array
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->getAllSessions();
     }
     
@@ -878,7 +848,7 @@ function getAllSessions(?PDO $connect = null): array
 function getAllSections(?PDO $connect = null): array
 {
     if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = new \Patro\Inscription\SectionService();
+        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
         return $service->getAllSections();
     }
     
@@ -895,7 +865,7 @@ function getAllSections(?PDO $connect = null): array
 function nomSectionExiste(string $nom, ?PDO $connect = null): bool
 {
     if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = new \Patro\Inscription\SectionService();
+        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
         return $service->nomSectionExiste($nom);
     }
     
@@ -926,7 +896,7 @@ function titreExiste(string $titre, ?PDO $connect = null, ?int $sessionId = null
 function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
 {
     if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = new \Patro\Inscription\SectionService();
+        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
         return $service->sectionIntervalOverlap($genre, $ageMin, $ageMax);
     }
     
@@ -952,7 +922,7 @@ function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $c
 function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
 {
     if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = new \Patro\Inscription\SectionService();
+        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
         $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
         $ageMax = filter_var($ageMax, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
         $ageMin = $ageMin === false ? 0 : (int) $ageMin;
@@ -1035,7 +1005,7 @@ function creerSection(string $nomSection, string $description = '', string $genr
 function sessionExists(int $idSession, ?PDO $connect = null): bool
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->sessionExists($idSession);
     }
     
@@ -1049,7 +1019,7 @@ function sessionExists(int $idSession, ?PDO $connect = null): bool
 function Addtheme(string $titre, int $sessionId): array
 {
     if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = new \Patro\Inscription\ThemeService();
+        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
         return $service->addTheme($titre, $sessionId);
     }
     
@@ -1105,7 +1075,7 @@ function Addtheme(string $titre, int $sessionId): array
 function getAllThemes(?PDO $connect = null): array
 {
     if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = new \Patro\Inscription\ThemeService();
+        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
         return $service->getAllThemes();
     }
     
@@ -1126,7 +1096,7 @@ function getAllThemes(?PDO $connect = null): array
 function getCurrentThemeTitle(?PDO $connect = null): string
 {
     if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = new \Patro\Inscription\ThemeService();
+        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
         return $service->getCurrentThemeTitle();
     }
     
@@ -1148,7 +1118,7 @@ function getCurrentThemeTitle(?PDO $connect = null): string
 function updateTheme(int $id, string $titre, int $sessionId): array
 {
     if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = new \Patro\Inscription\ThemeService();
+        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
         return $service->updateTheme($id, $titre, $sessionId);
     }
     
@@ -1218,7 +1188,7 @@ function updateTheme(int $id, string $titre, int $sessionId): array
 function deleteTheme(int $id): array
 {
     if (class_exists('\Patro\Inscription\ThemeService')) {
-        $service = new \Patro\Inscription\ThemeService();
+        $service = appContainer()->get(\Patro\Inscription\ThemeService::class);
         return $service->deleteTheme($id);
     }
     
@@ -1767,7 +1737,7 @@ function findMatchingSection(string $genre, string $dateNaissance, ?int $referen
     }
 
     if (class_exists('\Patro\Inscription\SectionService')) {
-        $service = $connect !== null ? new \Patro\Inscription\SectionService($connect) : new \Patro\Inscription\SectionService();
+        $service = appContainer()->get(\Patro\Inscription\SectionService::class);
         return $service->findMatchingSection($genre, $age, $typeSession);
     }
 
@@ -1803,7 +1773,7 @@ function determineSection(string $genre, string $dateNaissance, ?int $referenceY
 function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->getAnneeIdByValue($anneeVal);
     }
     
@@ -1818,7 +1788,7 @@ function getAnneeIdByValue(int $anneeVal, ?PDO $connect = null): ?int
 function getAnneeValueById(int $anneeId, ?PDO $connect = null): ?int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->getAnneeValueById($anneeId);
     }
     
@@ -1833,7 +1803,7 @@ function getAnneeValueById(int $anneeId, ?PDO $connect = null): ?int
 function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->ensureAnnee($anneeVal);
     }
     
@@ -1850,7 +1820,7 @@ function ensureAnnee(int $anneeVal, ?PDO $connect = null): int
 function getDistinctYears(): array
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->getDistinctYears();
     }
     
@@ -2506,7 +2476,7 @@ function existe(string $table, string $field, mixed $value, string $type = 'one'
 function getActiveAdminSessionId(): int
 {
     if (class_exists('\Patro\Inscription\SessionService')) {
-        $service = new \Patro\Inscription\SessionService();
+        $service = appContainer()->get(\Patro\Inscription\SessionService::class);
         return $service->getActiveAdminSessionId();
     }
     

@@ -35,6 +35,7 @@ php tests/security_helpers_test.php
 
 Ne versionnez jamais `Backend/.env`. Configurez HTTPS en production avec `APP_FORCE_HTTPS=true`, gardez `APP_DEBUG=false` et limitez les permissions d'ecriture a `storage/`.
 
-Le code historique charge encore `Backend/functions.php` et `Backend/utilitaire.php`.
-Ces fichiers sont conserves comme façades de compatibilite pendant la migration ;
-les nouveaux services doivent recevoir leurs dependances par le conteneur du bootstrap.
+Les points d'entree historiques chargent encore `Backend/functions.php` et
+`Backend/utilitaire.php` comme façades HTTP temporaires. La connexion PDO n'est
+plus accessible via un singleton legacy : les services applicatifs et CinetPay
+recoivent desormais leurs dependances depuis le conteneur du bootstrap.

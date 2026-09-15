@@ -27,14 +27,7 @@ function activiteStorageDirectory(): string
  */
 function getAllJeux(?PDO $connect = null): array
 {
-    if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
-        $repository = new \Patro\Domain\Jeu\Repository\JeuRepository($connect ?: getConnection());
-        return $repository->findAll();
-    }
-
-    $connect = $connect ?: getConnection();
-    $stmt = $connect->query('SELECT * FROM jeux ORDER BY nom ASC');
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->findAll();
 }
 
 /**
@@ -74,40 +67,16 @@ function creerJeu(
     }
 
     try {
-        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
-            $id = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->create([
-                'nom' => $nom, 'objectif' => $objectif, 'regles' => $regles,
-                'deroulement' => $deroulement, 'materiel' => $materiel,
-                'age_conseille' => $age_conseille, 'duree' => $duree,
-                'nombre_joueurs' => $nombre_joueurs, 'lieu' => $lieu,
-                'type_jeu' => $type_jeu, 'mise_en_place' => $mise_en_place,
-                'fin_jeu' => $fin_jeu, 'but_pedagogique' => $but_pedagogique,
-            ]);
-
-            return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => $id];
-        }
-
-        $connect = getConnection();
-        $stmt = $connect->prepare(
-            'INSERT INTO jeux (
-                nom, objectif, age_conseille, duree, nombre_joueurs,
-                lieu, type_jeu, materiel, mise_en_place, deroulement,
-                regles, fin_jeu, but_pedagogique
-            ) VALUES (
-                :nom, :objectif, :age_conseille, :duree, :nombre_joueurs,
-                :lieu, :type_jeu, :materiel, :mise_en_place, :deroulement,
-                :regles, :fin_jeu, :but_pedagogique
-            )'
-        );
-        $stmt->execute([
-            ':nom' => $nom, ':objectif' => $objectif, ':age_conseille' => $age_conseille,
-            ':duree' => $duree, ':nombre_joueurs' => $nombre_joueurs, ':lieu' => $lieu,
-            ':type_jeu' => $type_jeu, ':materiel' => $materiel, ':mise_en_place' => $mise_en_place,
-            ':deroulement' => $deroulement, ':regles' => $regles, ':fin_jeu' => $fin_jeu,
-            ':but_pedagogique' => $but_pedagogique,
+        $id = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->create([
+            'nom' => $nom, 'objectif' => $objectif, 'regles' => $regles,
+            'deroulement' => $deroulement, 'materiel' => $materiel,
+            'age_conseille' => $age_conseille, 'duree' => $duree,
+            'nombre_joueurs' => $nombre_joueurs, 'lieu' => $lieu,
+            'type_jeu' => $type_jeu, 'mise_en_place' => $mise_en_place,
+            'fin_jeu' => $fin_jeu, 'but_pedagogique' => $but_pedagogique,
         ]);
 
-        return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => (int) $connect->lastInsertId()];
+        return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => $id];
     } catch (PDOException $e) {
         error_log('Création jeu erreur : ' . $e->getMessage());
         return ['success' => false, 'message' => 'Erreur lors de l\'enregistrement dans la base de données.', 'alert_type' => 'danger'];
@@ -136,26 +105,10 @@ function updateJeu(int $id, array $data): array
     }
 
     try {
-        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
-            $updated = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->update($id, $normalized);
-            return $updated
-                ? ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success']
-                : ['success' => false, 'message' => 'Aucune donnée valide à mettre à jour.', 'alert_type' => 'warning'];
-        }
-
-        $connect = getConnection();
-        $data[':id'] = $id;
-        $stmt = $connect->prepare(
-            'UPDATE jeux SET
-                nom = :nom, objectif = :objectif, age_conseille = :age_conseille,
-                duree = :duree, nombre_joueurs = :nombre_joueurs, lieu = :lieu,
-                type_jeu = :type_jeu, materiel = :materiel, mise_en_place = :mise_en_place,
-                deroulement = :deroulement, regles = :regles, fin_jeu = :fin_jeu,
-                but_pedagogique = :but_pedagogique
-             WHERE id = :id'
-        );
-        $stmt->execute($data);
-        return ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success'];
+        $updated = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->update($id, $normalized);
+        return $updated
+            ? ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success']
+            : ['success' => false, 'message' => 'Aucune donnée valide à mettre à jour.', 'alert_type' => 'warning'];
     } catch (PDOException $e) {
         error_log('Update jeu erreur : ' . $e->getMessage());
         return ['success' => false, 'message' => 'Erreur lors de la modification.', 'alert_type' => 'danger'];
@@ -172,16 +125,10 @@ function deleteJeu(int $id): array
     }
 
     try {
-        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
-            $deleted = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->delete($id);
-            return $deleted
-                ? ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success']
-                : ['success' => false, 'message' => 'Jeu introuvable.', 'alert_type' => 'warning'];
-        }
-
-        $stmt = getConnection()->prepare('DELETE FROM jeux WHERE id = :id');
-        $stmt->execute([':id' => $id]);
-        return ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success'];
+        $deleted = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->delete($id);
+        return $deleted
+            ? ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success']
+            : ['success' => false, 'message' => 'Jeu introuvable.', 'alert_type' => 'warning'];
     } catch (PDOException $e) {
         return ['success' => false, 'message' => 'Erreur lors de la suppression.', 'alert_type' => 'danger'];
     }
