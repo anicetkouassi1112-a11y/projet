@@ -28,6 +28,7 @@ use Patro\Application\Animateur\AnimateurAuthorizationService;
 use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
 use Patro\Domain\Jeu\Repository\JeuRepository;
+use Patro\Domain\Activite\Repository\ActiviteImageRepository;
 use Patro\Shared\Container;
 
 $autoloadPath = dirname(__DIR__) . '/vendor/autoload.php';
@@ -84,6 +85,7 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(StatisticsRepository::class, static fn (Container $container): StatisticsRepository => new StatisticsRepository($container->get(PDO::class)));
     $container->singleton(InscriptionRepository::class, static fn (Container $container): InscriptionRepository => new InscriptionRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
+    $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
     $container->singleton(EnregistrerInscrit::class, static fn (Container $container): EnregistrerInscrit => new EnregistrerInscrit(
         $container->get(InscriptionRepository::class),
         $container->get(SectionRepository::class),

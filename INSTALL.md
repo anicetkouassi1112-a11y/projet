@@ -11,7 +11,8 @@
 
 1. Copier `Backend/.env.example` vers `Backend/.env`.
 2. Renseigner `APP_URL`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`.
-3. Importer `Database/database.sql`, puis les migrations dans l'ordre chronologique.
+3. Importer `Database/database.sql`. Ce fichier est le schema de reference
+   versionne et peut etre rejoue sans supprimer la base ni les donnees existantes.
    Le compte initial `patro` utilise temporairement le mot de passe `1234` uniquement
    pour l'installation locale. Changez-le immédiatement via l'administration avant
    toute exposition réseau.

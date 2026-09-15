@@ -1,5 +1,3 @@
-DROP DATABASE IF EXISTS projet_db;
-
 CREATE DATABASE IF NOT EXISTS projet_db
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_general_ci;
@@ -20,7 +18,8 @@ CREATE TABLE IF NOT EXISTS admin (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO admin (username, password, role) VALUES
-  ('patro', '$2y$10$hRjLFyzzitNKa6YIOIeag.pcWkLTuG0VKdmpmv39I0qVpq7RsEgTu', 'directeur');
+  ('patro', '$2y$10$XYD0/lBMtoGkMsrT5jNnOOuWq.FzsMSpOyexBS2S5JVQ89PA2wZH6', 'directeur')
+ON DUPLICATE KEY UPDATE id_admin = id_admin;
 
 -- ============================================================
 -- ANNEE

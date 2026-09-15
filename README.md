@@ -19,7 +19,7 @@ Application PHP/MySQL de gestion des inscriptions, animateurs, activites publiqu
 - `Backend/`: configuration, helpers, logique metier et assets.
 - `Backend/bootstrap/app.php`: bootstrap central, session, erreurs et conteneur de dependances.
 - `Backend/src/`: classes PSR-4 (`Domain`, `Http`, `Infrastructure`, services metier et securite).
-- `Database/`: schema SQL et migrations.
+- `Database/`: schema SQL de reference, rejouable sans suppression de la base.
 - `storage/`: logs et fichiers uploades hors webroot.
 - `tests/`: tests de fumee et de validation.
 

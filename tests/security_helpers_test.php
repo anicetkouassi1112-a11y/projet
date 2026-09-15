@@ -20,6 +20,21 @@ assertTrue(normalizeIvorianPhone('+225 05 94 23 63 41') === '2250594236341', 'Ph
 assertTrue(isValidIvorianPhone('0594236341'), 'Ivorian mobile number accepted.');
 assertTrue(!isValidIvorianPhone('0294236341'), 'Invalid Ivorian prefix rejected.');
 
+$schema = file_get_contents(dirname(__DIR__) . '/Database/database.sql');
+assertTrue($schema !== false, 'Database schema must be readable.');
+assertTrue(
+    !preg_match('/^\s*DROP\s+DATABASE\b/im', $schema),
+    'Production schema import must not drop the database.'
+);
+assertTrue(
+    preg_match(
+        "/\\('patro',\\s*'([^']+)'\\s*,\\s*'directeur'\\)/",
+        $schema,
+        $seedMatch
+    ) === 1 && password_verify('1234', $seedMatch[1]),
+    'Seed admin password must match the documented local bootstrap password.'
+);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

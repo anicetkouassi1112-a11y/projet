@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
 
 $conn = getConnection();
+$animateurRepository = new \Patro\Domain\Animateur\Repository\AnimateurRepository($conn);
 $anneeActive = activeYearFromRequest();
 $typeSessionActive = activeSessionTypeFromRequest();
 $currentSessionId = ensureSession($anneeActive, $typeSessionActive, $conn);
@@ -38,17 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Veuillez sélectionner au moins un animateur bloqué.';
                 $alertType = 'danger';
             } else {
-                $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $stmt = $conn->prepare(
-                    "UPDATE animateur a
-                     INNER JOIN animateur_session ans ON ans.id_animateur = a.id_animateur
-                     SET a.statut = 'actif'
-                     WHERE a.id_animateur IN ($placeholders)
-                       AND ans.id_session = ?"
-                );
-                $stmt->execute([...$ids, $currentSessionId]);
-
-                $nb = $stmt->rowCount();
+                $nb = $animateurRepository->bulkUnblockBySession($ids, $currentSessionId);
                 $message = $nb > 0 ? "$nb animateur(s) débloqué(s)." : 'Aucune modification effectuée.';
                 $alertType = $nb > 0 ? 'success' : 'warning';
             }
@@ -99,49 +90,20 @@ if ($searchTerm !== '') {
     $params[':q3'] = $like;
 }
 
-$stmt = $conn->prepare(
-    'SELECT a.id_animateur, a.nom_a, a.prenom_a, a.tel, a.statut, a.genre_a,
-            ans.id_animateur_session, ans.id_section, ans.date_inscription,
-            sec.nom_section
-     FROM animateur_session ans
-     INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
-     LEFT JOIN section sec ON sec.id_section = ans.id_section
-     WHERE ' . implode(' AND ', $where) . '
-     ORDER BY ' . $sortOptions[$sortKey]
+$animateurs = $animateurRepository->findSessionRows(
+    $currentSessionId,
+    $filterSection,
+    $filterStatut,
+    $searchTerm,
+    $sortKey,
+    $isScolaire
 );
-$stmt->execute($params);
-$animateurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // ---- Statistiques globales de la session (non filtrées) ----
-$statsStmt = $conn->prepare(
-    "SELECT
-        COUNT(*) AS total,
-        SUM(a.statut = 'actif') AS actifs,
-        SUM(a.statut = 'bloque') AS bloques,
-        SUM(ans.id_section IS NULL) AS sans_section
-     FROM animateur_session ans
-     INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
-     WHERE ans.id_session = :id_session"
-);
-$statsStmt->execute([':id_session' => $currentSessionId]);
-$stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'actifs' => 0, 'bloques' => 0, 'sans_section' => 0];
+$stats = $animateurRepository->statsForSession($currentSessionId);
 
 // ---- Totaux par genre (sur tous les animateurs de la session, non filtrés) ----
-$totaux = ['garcons' => 0, 'filles' => 0];
-$allAnimateursStmt = $conn->prepare(
-    'SELECT a.genre_a
-     FROM animateur_session ans
-     INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
-     WHERE ans.id_session = :id_session'
-);
-$allAnimateursStmt->execute([':id_session' => $currentSessionId]);
-while ($row = $allAnimateursStmt->fetch(PDO::FETCH_ASSOC)) {
-    if (($row['genre_a'] ?? '') === 'M') {
-        $totaux['garcons']++;
-    } elseif (($row['genre_a'] ?? '') === 'F') {
-        $totaux['filles']++;
-    }
-}
+$totaux = $animateurRepository->countGenderForSession($currentSessionId);
 $totalAnimateur = (int) ($totaux['garcons'] ?? 0);
 $totalAnimatrice = (int) ($totaux['filles'] ?? 0);
 

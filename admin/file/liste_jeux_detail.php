@@ -26,7 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
-        $result = deleteJeu($id);
+        $repository = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class);
+        $deleted = $repository->delete($id);
+        $result = $deleted
+            ? ['alert_type' => 'success', 'message' => 'Jeu supprimé avec succès.']
+            : ['alert_type' => 'warning', 'message' => 'Jeu introuvable.'];
         setFlashMessage($result['alert_type'], $result['message']);
         redirectTo(lien('liste_jeu', ['type' => $typeRetour]));
     }
@@ -47,13 +51,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $but_pedagogique = appCleanText($_POST['but_pedagogique'] ?? '', 5000);
 
         $id = (int)($_POST['id'] ?? 0);
-        $result = updateJeu($id, [
-            ':nom' => $nom, ':objectif' => $objectif, ':age_conseille' => $age_conseille,
-            ':duree' => $duree, ':nombre_joueurs' => $nombre_joueurs, ':lieu' => $lieu,
-            ':type_jeu' => $type_jeu, ':materiel' => $materiel, ':mise_en_place' => $mise_en_place,
-            ':deroulement' => $deroulement, ':regles' => $regles, ':fin_jeu' => $fin_jeu,
-            ':but_pedagogique' => $but_pedagogique
+        $repository = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class);
+        $updated = $repository->update($id, [
+            'nom' => $nom,
+            'objectif' => $objectif,
+            'age_conseille' => $age_conseille,
+            'duree' => $duree,
+            'nombre_joueurs' => $nombre_joueurs,
+            'lieu' => $lieu,
+            'type_jeu' => $type_jeu,
+            'materiel' => $materiel,
+            'mise_en_place' => $mise_en_place,
+            'deroulement' => $deroulement,
+            'regles' => $regles,
+            'fin_jeu' => $fin_jeu,
+            'but_pedagogique' => $but_pedagogique,
         ]);
+
+        $result = $updated
+            ? ['alert_type' => 'success', 'message' => 'Jeu mis à jour avec succès.']
+            : ['alert_type' => 'warning', 'message' => 'Aucune donnée valide à mettre à jour.'];
 
         setFlashMessage($result['alert_type'] ?? 'danger', $result['message'] ?? 'Erreur inconnue.');
         redirectTo(lien('liste_jeux_detail', ['id' => $id, 'type' => $type_jeu !== '' ? $type_jeu : 'non_classe']));

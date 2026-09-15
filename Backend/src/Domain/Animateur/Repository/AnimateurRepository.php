@@ -239,6 +239,126 @@ final class AnimateurRepository
         return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function bulkUnblockBySession(array $animateurIds, int $sessionId): int
+    {
+        if ($animateurIds === []) {
+            return 0;
+        }
+
+        $placeholders = [];
+        $parameters = [':session_id' => $sessionId];
+        foreach (array_values($animateurIds) as $index => $animateurId) {
+            $key = ':animateur_' . $index;
+            $placeholders[] = $key;
+            $parameters[$key] = (int) $animateurId;
+        }
+
+        $statement = $this->connection->prepare(
+            'UPDATE animateur a
+             INNER JOIN animateur_session ans ON ans.id_animateur = a.id_animateur
+             SET a.statut = "actif"
+             WHERE a.id_animateur IN (' . implode(', ', $placeholders) . ')
+               AND ans.id_session = :session_id'
+        );
+        $statement->execute($parameters);
+
+        return $statement->rowCount();
+    }
+
+    /** @return array{total:int,actifs:int,bloques:int,sans_section:int} */
+    public function statsForSession(int $sessionId): array
+    {
+        $statement = $this->connection->prepare(
+            "SELECT
+                COUNT(*) AS total,
+                SUM(a.statut = 'actif') AS actifs,
+                SUM(a.statut = 'bloque') AS bloques,
+                SUM(ans.id_section IS NULL) AS sans_section
+             FROM animateur_session ans
+             INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
+             WHERE ans.id_session = :session_id"
+        );
+        $statement->execute([':session_id' => $sessionId]);
+        $row = $statement->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'actifs' => (int) ($row['actifs'] ?? 0),
+            'bloques' => (int) ($row['bloques'] ?? 0),
+            'sans_section' => (int) ($row['sans_section'] ?? 0),
+        ];
+    }
+
+    /** @return array{garcons:int,filles:int} */
+    public function countGenderForSession(int $sessionId): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT a.genre_a
+             FROM animateur_session ans
+             INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
+             WHERE ans.id_session = :session_id'
+        );
+        $statement->execute([':session_id' => $sessionId]);
+
+        $totals = ['garcons' => 0, 'filles' => 0];
+        while ($row = $statement->fetch(PDO::FETCH_ASSOC)) {
+            if (($row['genre_a'] ?? '') === 'M') {
+                $totals['garcons']++;
+            } elseif (($row['genre_a'] ?? '') === 'F') {
+                $totals['filles']++;
+            }
+        }
+
+        return $totals;
+    }
+
+    /** @return list<array<string,mixed>> */
+    public function findSessionRows(int $sessionId, int $sectionId = 0, string $status = '', string $searchTerm = '', string $sortKey = 'section', bool $isScolaire = false): array
+    {
+        $sortOptions = [
+            'section' => 'sec.nom_section ASC, a.nom_a ASC, a.prenom_a ASC',
+            'nom' => 'a.nom_a ASC, a.prenom_a ASC',
+            'nom_desc' => 'a.nom_a DESC, a.prenom_a DESC',
+            'statut' => 'a.statut ASC, a.nom_a ASC',
+            'date' => 'ans.date_inscription DESC',
+            'date_asc' => 'ans.date_inscription ASC',
+        ];
+        $orderBy = $sortOptions[$sortKey] ?? $sortOptions['section'];
+
+        $where = ['ans.id_session = :id_session'];
+        $parameters = [':id_session' => $sessionId];
+
+        if (!$isScolaire && $sectionId > 0) {
+            $where[] = 'ans.id_section = :id_section';
+            $parameters[':id_section'] = $sectionId;
+        }
+        if ($status !== '') {
+            $where[] = 'a.statut = :statut';
+            $parameters[':statut'] = $status;
+        }
+        if ($searchTerm !== '') {
+            $where[] = '(a.nom_a LIKE :q1 OR a.prenom_a LIKE :q2 OR a.tel LIKE :q3)';
+            $like = '%' . $searchTerm . '%';
+            $parameters[':q1'] = $like;
+            $parameters[':q2'] = $like;
+            $parameters[':q3'] = $like;
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT a.id_animateur, a.nom_a, a.prenom_a, a.tel, a.statut, a.genre_a,
+                    ans.id_animateur_session, ans.id_section, ans.date_inscription,
+                    sec.nom_section
+             FROM animateur_session ans
+             INNER JOIN animateur a ON a.id_animateur = ans.id_animateur
+             LEFT JOIN section sec ON sec.id_section = ans.id_section
+             WHERE ' . implode(' AND ', $where) . '
+             ORDER BY ' . $orderBy
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     /** @return list<array<string,mixed>> */
     public function findBySectionIds(array $sectionIds, int $sessionId, ?string $genre, bool $isScolaire = false): array
     {

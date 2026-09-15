@@ -19,13 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'delete') {
         $id = (int)($_POST['id'] ?? 0);
-        $result = deleteJeu($id);
+        $repository = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class);
+        $deleted = $repository->delete($id);
+        $result = $deleted
+            ? ['alert_type' => 'success', 'message' => 'Jeu supprimé avec succès.']
+            : ['alert_type' => 'warning', 'message' => 'Jeu introuvable.'];
         setFlashMessage($result['alert_type'], $result['message']);
         redirectTo(lien('liste_type_jeux'));
     }
 
     if ($action === 'create' || $action === 'update') {
-        // Nettoyage commun
         $nom = appCleanText($_POST['nom'] ?? '', 150);
         $type_jeu = appCleanText($_POST['type_jeu'] ?? '', 100);
         $age_conseille = appCleanText($_POST['age_conseille'] ?? '', 50);
@@ -40,21 +43,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $fin_jeu = appCleanText($_POST['fin_jeu'] ?? '', 5000);
         $but_pedagogique = appCleanText($_POST['but_pedagogique'] ?? '', 5000);
 
+        $repository = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class);
+
         if ($action === 'create') {
-            $result = creerJeu(
-                $nom, $objectif, $regles, $deroulement, $materiel,
-                $age_conseille, $duree, $nombre_joueurs, $lieu,
-                $type_jeu, $mise_en_place, $fin_jeu, $but_pedagogique
-            );
+            $id = $repository->create([
+                'nom' => $nom,
+                'objectif' => $objectif,
+                'regles' => $regles,
+                'deroulement' => $deroulement,
+                'materiel' => $materiel,
+                'age_conseille' => $age_conseille,
+                'duree' => $duree,
+                'nombre_joueurs' => $nombre_joueurs,
+                'lieu' => $lieu,
+                'type_jeu' => $type_jeu,
+                'mise_en_place' => $mise_en_place,
+                'fin_jeu' => $fin_jeu,
+                'but_pedagogique' => $but_pedagogique,
+            ]);
+            $result = ['alert_type' => 'success', 'message' => $id > 0 ? 'Jeu créé avec succès.' : 'Échec de la création.'];
         } else {
             $id = (int)($_POST['id'] ?? 0);
-            $result = updateJeu($id, [
-                ':nom' => $nom, ':objectif' => $objectif, ':age_conseille' => $age_conseille,
-                ':duree' => $duree, ':nombre_joueurs' => $nombre_joueurs, ':lieu' => $lieu,
-                ':type_jeu' => $type_jeu, ':materiel' => $materiel, ':mise_en_place' => $mise_en_place,
-                ':deroulement' => $deroulement, ':regles' => $regles, ':fin_jeu' => $fin_jeu,
-                ':but_pedagogique' => $but_pedagogique
+            $updated = $repository->update($id, [
+                'nom' => $nom,
+                'objectif' => $objectif,
+                'regles' => $regles,
+                'deroulement' => $deroulement,
+                'materiel' => $materiel,
+                'age_conseille' => $age_conseille,
+                'duree' => $duree,
+                'nombre_joueurs' => $nombre_joueurs,
+                'lieu' => $lieu,
+                'type_jeu' => $type_jeu,
+                'mise_en_place' => $mise_en_place,
+                'fin_jeu' => $fin_jeu,
+                'but_pedagogique' => $but_pedagogique,
             ]);
+            $result = $updated
+                ? ['alert_type' => 'success', 'message' => 'Jeu mis à jour avec succès.']
+                : ['alert_type' => 'warning', 'message' => 'Aucune donnée valide à mettre à jour.'];
         }
 
         setFlashMessage($result['alert_type'] ?? 'danger', $result['message'] ?? 'Erreur inconnue.');
@@ -67,14 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 2. RÉCUPÉRATION DES TYPES DE JEUX (comme animateur.php)
-$connect = getConnection();
-$stmt = $connect->query(
-    "SELECT type_jeu, COUNT(id) as total
-     FROM jeux
-     GROUP BY type_jeu
-     ORDER BY type_jeu ASC"
-);
-$typesJeux = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$repository = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class);
+$typesJeux = $repository->types();
 ?>
 <div class="container-fluid home-shell">
     <main class="home-main py-4">

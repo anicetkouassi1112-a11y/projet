@@ -22,49 +22,18 @@ function activiteStorageDirectory(): string
     return $default;
 }
 
-function ensureActiviteImagesSessionColumn(?PDO $connect = null): bool
-{
-    static $checked = false;
-    static $available = false;
-
-    if ($checked) {
-        return $available;
-    }
-
-    $connect = $connect ?: getConnection();
-
-    try {
-        $column = $connect->query("SHOW COLUMNS FROM activite_images LIKE 'session_id'")->fetch(PDO::FETCH_ASSOC);
-        if (!$column) {
-            $connect->exec('ALTER TABLE activite_images ADD COLUMN session_id INT NULL AFTER id');
-            $connect->exec('CREATE INDEX idx_activite_session_visible_ordre ON activite_images (session_id, visible, ordre)');
-        }
-
-        $activeSessionId = getActiveAdminSessionId();
-        $stmt = $connect->prepare('UPDATE activite_images SET session_id = :session_id WHERE session_id IS NULL');
-        $stmt->execute([':session_id' => $activeSessionId]);
-
-        $checked = true;
-        $available = true;
-        return true;
-    } catch (PDOException $e) {
-        error_log('Activite images session column error: ' . $e->getMessage());
-        $checked = true;
-        $available = false;
-        return false;
-    }
-}
 /**
  * Récupère tous les jeux de la base de données.
  */
 function getAllJeux(?PDO $connect = null): array
 {
-    $connect = $connect ?: getConnection();
-    
-    $stmt = $connect->query(
-        'SELECT * FROM jeux ORDER BY nom ASC'
-    );
+    if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
+        $repository = new \Patro\Domain\Jeu\Repository\JeuRepository($connect ?: getConnection());
+        return $repository->findAll();
+    }
 
+    $connect = $connect ?: getConnection();
+    $stmt = $connect->query('SELECT * FROM jeux ORDER BY nom ASC');
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
@@ -72,8 +41,8 @@ function getAllJeux(?PDO $connect = null): array
  * Crée un nouveau jeu dans la base de données globale.
  */
 function creerJeu(
-    string $nom, 
-    string $objectif = '', 
+    string $nom,
+    string $objectif = '',
     string $regles = '',
     string $deroulement = '',
     string $materiel = '',
@@ -86,7 +55,6 @@ function creerJeu(
     string $fin_jeu = '',
     string $but_pedagogique = ''
 ): array {
-    // Nettoyage des données
     $nom = appCleanText($nom, 150);
     $objectif = appCleanText($objectif, 5000);
     $regles = appCleanText($regles, 5000);
@@ -101,82 +69,91 @@ function creerJeu(
     $fin_jeu = appCleanText($fin_jeu, 5000);
     $but_pedagogique = appCleanText($but_pedagogique, 5000);
 
-    // Validation
     if ($nom === '') {
-        return [
-            'success' => false, 
-            'message' => 'Le nom du jeu est obligatoire.', 
-            'alert_type' => 'warning'
-        ];
+        return ['success' => false, 'message' => 'Le nom du jeu est obligatoire.', 'alert_type' => 'warning'];
     }
 
-    $connect = getConnection();
-
     try {
+        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
+            $id = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->create([
+                'nom' => $nom, 'objectif' => $objectif, 'regles' => $regles,
+                'deroulement' => $deroulement, 'materiel' => $materiel,
+                'age_conseille' => $age_conseille, 'duree' => $duree,
+                'nombre_joueurs' => $nombre_joueurs, 'lieu' => $lieu,
+                'type_jeu' => $type_jeu, 'mise_en_place' => $mise_en_place,
+                'fin_jeu' => $fin_jeu, 'but_pedagogique' => $but_pedagogique,
+            ]);
+
+            return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => $id];
+        }
+
+        $connect = getConnection();
         $stmt = $connect->prepare(
             'INSERT INTO jeux (
-                nom, objectif, age_conseille, duree, nombre_joueurs, 
-                lieu, type_jeu, materiel, mise_en_place, deroulement, 
+                nom, objectif, age_conseille, duree, nombre_joueurs,
+                lieu, type_jeu, materiel, mise_en_place, deroulement,
                 regles, fin_jeu, but_pedagogique
             ) VALUES (
-                :nom, :objectif, :age_conseille, :duree, :nombre_joueurs, 
-                :lieu, :type_jeu, :materiel, :mise_en_place, :deroulement, 
+                :nom, :objectif, :age_conseille, :duree, :nombre_joueurs,
+                :lieu, :type_jeu, :materiel, :mise_en_place, :deroulement,
                 :regles, :fin_jeu, :but_pedagogique
             )'
         );
-        
         $stmt->execute([
-            ':nom' => $nom,
-            ':objectif' => $objectif,
-            ':age_conseille' => $age_conseille,
-            ':duree' => $duree,
-            ':nombre_joueurs' => $nombre_joueurs,
-            ':lieu' => $lieu,
-            ':type_jeu' => $type_jeu,
-            ':materiel' => $materiel,
-            ':mise_en_place' => $mise_en_place,
-            ':deroulement' => $deroulement,
-            ':regles' => $regles,
-            ':fin_jeu' => $fin_jeu,
+            ':nom' => $nom, ':objectif' => $objectif, ':age_conseille' => $age_conseille,
+            ':duree' => $duree, ':nombre_joueurs' => $nombre_joueurs, ':lieu' => $lieu,
+            ':type_jeu' => $type_jeu, ':materiel' => $materiel, ':mise_en_place' => $mise_en_place,
+            ':deroulement' => $deroulement, ':regles' => $regles, ':fin_jeu' => $fin_jeu,
             ':but_pedagogique' => $but_pedagogique,
         ]);
 
-        return [
-            'success' => true,
-            'message' => 'Jeu "' . $nom . '" créé avec succès.',
-            'alert_type' => 'success',
-            'id' => (int) $connect->lastInsertId(),
-        ];
+        return ['success' => true, 'message' => 'Jeu "' . $nom . '" créé avec succès.', 'alert_type' => 'success', 'id' => (int) $connect->lastInsertId()];
     } catch (PDOException $e) {
         error_log('Création jeu erreur : ' . $e->getMessage());
-        return [
-            'success' => false, 
-            'message' => 'Erreur lors de l\'enregistrement dans la base de données.', 
-            'alert_type' => 'danger'
-        ];
+        return ['success' => false, 'message' => 'Erreur lors de l\'enregistrement dans la base de données.', 'alert_type' => 'danger'];
     }
 }
 
 /**
  * Met à jour un jeu existant.
  */
-function updateJeu(int $id, array $data): array {
-    if ($id <= 0 || empty($data[':nom'])) {
+function updateJeu(int $id, array $data): array
+{
+    if ($id <= 0) {
         return ['success' => false, 'message' => 'Données invalides.', 'alert_type' => 'warning'];
     }
 
-    $connect = getConnection();
+    $normalized = [];
+    foreach ($data as $key => $value) {
+        $field = ltrim((string) $key, ':');
+        if ($field !== '') {
+            $normalized[$field] = $value;
+        }
+    }
+
+    if (empty($normalized['nom'])) {
+        return ['success' => false, 'message' => 'Données invalides.', 'alert_type' => 'warning'];
+    }
+
     try {
+        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
+            $updated = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->update($id, $normalized);
+            return $updated
+                ? ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success']
+                : ['success' => false, 'message' => 'Aucune donnée valide à mettre à jour.', 'alert_type' => 'warning'];
+        }
+
+        $connect = getConnection();
+        $data[':id'] = $id;
         $stmt = $connect->prepare(
-            'UPDATE jeux SET 
-                nom = :nom, objectif = :objectif, age_conseille = :age_conseille, 
-                duree = :duree, nombre_joueurs = :nombre_joueurs, lieu = :lieu, 
-                type_jeu = :type_jeu, materiel = :materiel, mise_en_place = :mise_en_place, 
-                deroulement = :deroulement, regles = :regles, fin_jeu = :fin_jeu, 
+            'UPDATE jeux SET
+                nom = :nom, objectif = :objectif, age_conseille = :age_conseille,
+                duree = :duree, nombre_joueurs = :nombre_joueurs, lieu = :lieu,
+                type_jeu = :type_jeu, materiel = :materiel, mise_en_place = :mise_en_place,
+                deroulement = :deroulement, regles = :regles, fin_jeu = :fin_jeu,
                 but_pedagogique = :but_pedagogique
              WHERE id = :id'
         );
-        $data[':id'] = $id;
         $stmt->execute($data);
         return ['success' => true, 'message' => 'Jeu mis à jour avec succès.', 'alert_type' => 'success'];
     } catch (PDOException $e) {
@@ -188,9 +165,20 @@ function updateJeu(int $id, array $data): array {
 /**
  * Supprime un jeu.
  */
-function deleteJeu(int $id): array {
-    if ($id <= 0) return ['success' => false, 'message' => 'ID invalide.', 'alert_type' => 'warning'];
+function deleteJeu(int $id): array
+{
+    if ($id <= 0) {
+        return ['success' => false, 'message' => 'ID invalide.', 'alert_type' => 'warning'];
+    }
+
     try {
+        if (class_exists('Patro\\Domain\\Jeu\\Repository\\JeuRepository')) {
+            $deleted = (new \Patro\Domain\Jeu\Repository\JeuRepository(getConnection()))->delete($id);
+            return $deleted
+                ? ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success']
+                : ['success' => false, 'message' => 'Jeu introuvable.', 'alert_type' => 'warning'];
+        }
+
         $stmt = getConnection()->prepare('DELETE FROM jeux WHERE id = :id');
         $stmt->execute([':id' => $id]);
         return ['success' => true, 'message' => 'Jeu supprimé avec succès.', 'alert_type' => 'success'];
@@ -203,21 +191,12 @@ function getVisibleActiviteImages(?PDO $connect = null): array
 {
     try {
         $connect = $connect ?: getConnection();
-        $hasSessionColumn = ensureActiviteImagesSessionColumn($connect);
-
-        if ($hasSessionColumn) {
-            $stmt = $connect->prepare(
-                'SELECT id, titre, image_path, ordre, visible, created_at, description, session_id
-                 FROM activite_images
-                 WHERE visible = 1
-                   AND session_id = :session_id
-                 ORDER BY ordre ASC, id ASC'
-            );
-            $stmt->execute([':session_id' => getActiveAdminSessionId()]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        if (!$repository->ensureSessionColumn()) {
+            return [];
         }
 
-        return [];
+        return $repository->findVisibleBySession(getActiveAdminSessionId());
     } catch (PDOException $e) {
         error_log('Visible activite images error: ' . $e->getMessage());
         return [];
@@ -228,20 +207,12 @@ function getAllActiviteImages(?PDO $connect = null): array
 {
     try {
         $connect = $connect ?: getConnection();
-        $hasSessionColumn = ensureActiviteImagesSessionColumn($connect);
-
-        if ($hasSessionColumn) {
-            $stmt = $connect->prepare(
-                'SELECT id, titre, image_path, ordre, visible, created_at, description, session_id
-                 FROM activite_images
-                 WHERE session_id = :session_id
-                 ORDER BY ordre ASC, id ASC'
-            );
-            $stmt->execute([':session_id' => getActiveAdminSessionId()]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        if (!$repository->ensureSessionColumn()) {
+            return [];
         }
 
-        return [];
+        return $repository->findAllBySession(getActiveAdminSessionId());
     } catch (PDOException $e) {
         error_log('All activite images error: ' . $e->getMessage());
         return [];
@@ -296,32 +267,18 @@ function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0
     }
     @chmod($destination, 0640);
 
-    // Chemin stocke hors webroot
     $storedPath = 'activites/' . $filename;
     $titre = appCleanText($titre, 255);
     $ordre = max(0, min(9999, $ordre));
     $description = appCleanText($description, 5000);
     try {
         $connect = getConnection();
-        ensureActiviteImagesSessionColumn($connect);
-        $stmt = $connect->prepare(
-            'INSERT INTO activite_images (session_id, titre, image_path, ordre, visible, description)
-             VALUES (:session_id, :titre, :image_path, :ordre, :visible, :description)'
-        );
-        $stmt->execute([
-            ':session_id' => getActiveAdminSessionId(),
-            ':titre' => $titre !== '' ? $titre : null,
-            ':image_path' => $storedPath,
-            ':ordre' => $ordre,
-            ':visible' => $visible ? 1 : 0,
-            ':description' => $description !== '' ? $description : null,
-        ]);
+        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository->ensureSessionColumn();
 
-        return [
-            'success' => true,
-            'message' => 'Image ajoutee avec succes.',
-            'id' => (int) $connect->lastInsertId(),
-        ];
+        $id = $repository->create(getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
+
+        return ['success' => true, 'message' => 'Image ajoutee avec succes.', 'id' => $id];
     } catch (PDOException $e) {
         @unlink($destination);
         error_log('Save activite image error: ' . $e->getMessage());
@@ -337,39 +294,19 @@ function updateActiviteImageMeta(int $id, string $titre, int $ordre, bool $visib
 
     $titre = appCleanText($titre, 255);
     $ordre = max(0, min(9999, $ordre));
+    $description = appCleanText($description, 5000);
 
     $connect = getConnection();
-    ensureActiviteImagesSessionColumn($connect);
-
-    $exists = $connect->prepare('SELECT COUNT(*) FROM activite_images WHERE id = :id AND session_id = :session_id');
-    $exists->execute([
-        ':id' => $id,
-        ':session_id' => getActiveAdminSessionId(),
-    ]);
-    if ((int) $exists->fetchColumn() === 0) {
+    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $description = appCleanText($description, 5000);
-    $stmt = $connect->prepare(
-        'UPDATE activite_images
-         SET titre = :titre,
-             ordre = :ordre,
-             visible = :visible,
-             description = :description
-         WHERE id = :id
-           AND session_id = :session_id'
-    );
-    $stmt->execute([
-        ':titre' => $titre !== '' ? $titre : null,
-        ':ordre' => $ordre,
-        ':visible' => $visible ? 1 : 0,
-        ':description' => $description !== '' ? $description : null,
-        ':id' => $id,
-        ':session_id' => getActiveAdminSessionId(),
-    ]);
+    $updated = $repository->updateMeta($id, getActiveAdminSessionId(), $titre, $ordre, $visible, $description);
 
-    return ['success' => true, 'message' => 'Image mise a jour.'];
+    return $updated
+        ? ['success' => true, 'message' => 'Image mise a jour.']
+        : ['success' => false, 'message' => 'Image introuvable.'];
 }
 
 /**
@@ -423,14 +360,9 @@ function replaceActiviteImageFile(int $id, string $tmpPath, string $mimeType, ?s
 
     try {
         $connect = getConnection();
-        ensureActiviteImagesSessionColumn($connect);
-        $stmt = $connect->prepare('UPDATE activite_images SET image_path = :path WHERE id = :id AND session_id = :session_id');
-        $stmt->execute([
-            ':path' => $storedPath,
-            ':id' => $id,
-            ':session_id' => getActiveAdminSessionId(),
-        ]);
-        if ($stmt->rowCount() === 0) {
+        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository->ensureSessionColumn();
+        if (!$repository->replaceImagePath($id, getActiveAdminSessionId(), $storedPath)) {
             @unlink($newPath);
             return ['success' => false, 'message' => 'Image introuvable.'];
         }
@@ -456,25 +388,21 @@ function deleteActiviteImage(int $id): array
     }
 
     $connect = getConnection();
-    ensureActiviteImagesSessionColumn($connect);
-    $stmt = $connect->prepare('SELECT image_path FROM activite_images WHERE id = :id AND session_id = :session_id LIMIT 1');
-    $stmt->execute([
-        ':id' => $id,
-        ':session_id' => getActiveAdminSessionId(),
-    ]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$row) {
+    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    if (!$repository->ensureSessionColumn()) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $delete = $connect->prepare('DELETE FROM activite_images WHERE id = :id AND session_id = :session_id');
-    $delete->execute([
-        ':id' => $id,
-        ':session_id' => getActiveAdminSessionId(),
-    ]);
+    $image = $repository->findByIdAndSession($id, getActiveAdminSessionId());
+    if (!$image) {
+        return ['success' => false, 'message' => 'Image introuvable.'];
+    }
 
-    $relative = basename(str_replace('\\', '/', (string) $row['image_path']));
+    if (!$repository->deleteBySession($id, getActiveAdminSessionId())) {
+        return ['success' => false, 'message' => 'Image introuvable.'];
+    }
+
+    $relative = basename(str_replace('\\', '/', (string) ($image['image_path'] ?? '')));
     $filePath = activiteStorageDirectory() . DIRECTORY_SEPARATOR . $relative;
     if (is_file($filePath)) {
         @unlink($filePath);
@@ -494,14 +422,10 @@ function resolveActiviteImagePath(string $storedPath): string
 function getActiviteImageById(int $id, ?PDO $connect = null): array
 {
     $connect = $connect ?: getConnection();
-    ensureActiviteImagesSessionColumn($connect);
-    $stmt = $connect->prepare('SELECT id, titre, image_path, ordre, visible, created_at, description, session_id FROM activite_images WHERE id = :id AND session_id = :session_id LIMIT 1');
-    $stmt->execute([
-        ':id' => $id,
-        ':session_id' => getActiveAdminSessionId(),
-    ]);
+    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    $repository->ensureSessionColumn();
 
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    return $repository->findByIdAndSession($id, getActiveAdminSessionId()) ?? [];
 }
 
 /**
