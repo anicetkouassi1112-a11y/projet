@@ -67,19 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
     }
 
     try {
-        $stmt = getConnection()->prepare(
-            'UPDATE inscription
-             SET etat = :new_etat
-             WHERE id_inscription = :id_inscription
-               AND etat = :old_etat'
-        );
-        $stmt->execute([
-            ':new_etat' => 'inscrit',
-            ':id_inscription' => $idInscription,
-            ':old_etat' => 'En attente',
-        ]);
-
-        $success = $stmt->rowCount() > 0;
+        $success = appContainer()
+            ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+            ->validatePending($idInscription);
 
         if ($isAjax) {
             while (ob_get_level()) { ob_end_clean(); } // <--- TRÈS IMPORTANT : Supprime le HTML pour ne laisser QUE le JSON pur
@@ -114,35 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
 $inscriptions = [];
 try {
     $anneeId = selectedYearId($anneeActive);
-    $params = [
-        ':annee_id' => $anneeId,
-        ':type_session' => $typeSessionActive,
-        ':etat' => 'En attente',
-    ];
-
-    $where = 's.annee_id = :annee_id
-        AND s.type_session = :type_session
-        AND i.etat = :etat';
-    if ($searchQuery !== '') {
-        $where .= ' AND (u.nom LIKE :search_nom OR u.prenom LIKE :search_prenom OR CONCAT(u.nom, " ", u.prenom) LIKE :search_fullname)';
-        $searchTerm = '%' . $searchQuery . '%';
-        $params[':search_nom'] = $searchTerm;
-        $params[':search_prenom'] = $searchTerm;
-        $params[':search_fullname'] = $searchTerm;
-    }
-
-    $stmt = getConnection()->prepare(
-        'SELECT i.id_inscription, u.nom, u.prenom, u.date_naissance, u.genre,
-                i.etat, i.montant_inscription, sec.nom_section
-         FROM inscription i
-         INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-         LEFT JOIN section sec ON sec.id_section = i.id_section
-         INNER JOIN session s ON s.id_session = i.id_session
-         WHERE ' . $where . '
-         ORDER BY i.created_at DESC'
-    );
-    $stmt->execute($params);
-    $inscriptions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $inscriptions = appContainer()
+        ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+        ->findPending($anneeId, $typeSessionActive, $searchQuery);
 } catch (PDOException $e) {
     error_log('Pending list error: ' . $e->getMessage());
     setFlashMessage('danger', 'Erreur pendant le chargement des inscriptions en attente.');

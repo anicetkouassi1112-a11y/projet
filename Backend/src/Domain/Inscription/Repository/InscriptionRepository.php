@@ -157,6 +157,55 @@ final class InscriptionRepository
         return $statement->rowCount() > 0;
     }
 
+    /** @return list<array<string,mixed>> */
+    public function findPending(int $yearId, string $sessionType, ?string $term = null): array
+    {
+        $conditions = [
+            's.annee_id = :year_id',
+            's.type_session = :session_type',
+            'i.etat = :state',
+        ];
+        $parameters = [
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => 'En attente',
+        ];
+        if ($term !== null && $term !== '') {
+            $conditions[] = '(u.nom LIKE :term OR u.prenom LIKE :term OR CONCAT(u.nom, " ", u.prenom) LIKE :term)';
+            $parameters[':term'] = '%' . $term . '%';
+        }
+
+        $statement = $this->connection->prepare(
+            'SELECT i.id_inscription, u.nom, u.prenom, u.date_naissance, u.genre,
+                    i.etat, i.montant_inscription, sec.nom_section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             LEFT JOIN section sec ON sec.id_section = i.id_section
+             INNER JOIN session s ON s.id_session = i.id_session
+             WHERE ' . implode(' AND ', $conditions) . '
+             ORDER BY i.created_at DESC'
+        );
+        $statement->execute($parameters);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function validatePending(int $inscriptionId): bool
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription
+             SET etat = :new_state
+             WHERE id_inscription = :id AND etat = :old_state'
+        );
+        $statement->execute([
+            ':new_state' => 'inscrit',
+            ':id' => $inscriptionId,
+            ':old_state' => 'En attente',
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
+
     /** @return array{identifiant:string,ordre_inscription:int} */
     public function allocateIdentifier(?string $section, string $genre, int $digits = 3): array
     {

@@ -33,16 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $alertType = 'danger';
             } else {
                 try {
-                    // Verifie que le nom d'utilisateur n'est pas deja pris par un autre admin
-                    $check = getConnection()->prepare('SELECT COUNT(*) FROM admin WHERE username = :username AND id_admin != :id_admin');
-                    $check->execute([':username' => $newUsername, ':id_admin' => $adminId]);
-
-                    if ((int) $check->fetchColumn() > 0) {
+                    $admins = appContainer()->get(\Patro\Domain\Admin\Repository\AdminRepository::class);
+                    if ($admins->usernameExistsForAnotherAdmin($newUsername, $adminId)) {
                         $message = "Ce nom d'utilisateur est deja utilise.";
                         $alertType = 'danger';
                     } else {
-                        $update = getConnection()->prepare('UPDATE admin SET username = :username WHERE id_admin = :id_admin');
-                        $update->execute([':username' => $newUsername, ':id_admin' => $adminId]);
+                        $admins->updateUsername($adminId, $newUsername);
 
                         // Met a jour les infos de session/admin courant si necessaire
                         if (is_array($_SESSION['adpro'] ?? null)) {
@@ -77,9 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $alertType = 'danger';
             } else {
                 try {
-                    $stmt = getConnection()->prepare('SELECT password FROM admin WHERE id_admin = :id_admin LIMIT 1');
-                    $stmt->execute([':id_admin' => $adminId]);
-                    $storedPassword = (string) ($stmt->fetchColumn() ?: '');
+                    $adminRecord = appContainer()
+                        ->get(\Patro\Domain\Admin\Repository\AdminRepository::class)
+                        ->findById($adminId);
+                    $storedPassword = (string) ($adminRecord['password'] ?? '');
 
                     // Fallback pour les anciens comptes stockes en MD5 non sale.
                     // Le mot de passe sera automatiquement migre vers PASSWORD_DEFAULT ci-dessous.
@@ -91,8 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $alertType = 'danger';
                     } else {
                         $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
-                        $update = getConnection()->prepare('UPDATE admin SET password = :password WHERE id_admin = :id_admin');
-                        $update->execute([':password' => $newHash, ':id_admin' => $adminId]);
+                        appContainer()
+                            ->get(\Patro\Domain\Admin\Repository\AdminRepository::class)
+                            ->updatePassword($adminId, $newHash);
                         session_regenerate_id(true);
                         $message = 'Mot de passe mis a jour avec succes.';
                     }
