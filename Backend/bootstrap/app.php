@@ -20,6 +20,7 @@ use Patro\Domain\Inscription\Repository\BackupRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
+use Patro\Application\Configuration\ConfigurationService;
 use Patro\Application\Inscription\ModifierInscrit;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
@@ -82,6 +83,9 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(SectionRepository::class, static fn (Container $container): SectionRepository => new SectionRepository($container->get(PDO::class)));
     $container->singleton(ThemeRepository::class, static fn (Container $container): ThemeRepository => new ThemeRepository($container->get(PDO::class)));
     $container->singleton(ConfigurationRepository::class, static fn (Container $container): ConfigurationRepository => new ConfigurationRepository($container->get(PDO::class)));
+    $container->singleton(ConfigurationService::class, static fn (Container $container): ConfigurationService => new ConfigurationService(
+        $container->get(ConfigurationRepository::class)
+    ));
     $container->singleton(AdminRepository::class, static fn (Container $container): AdminRepository => new AdminRepository($container->get(PDO::class)));
     $container->singleton(AnimateurRepository::class, static fn (Container $container): AnimateurRepository => new AnimateurRepository($container->get(PDO::class)));
     $container->singleton(StatisticsRepository::class, static fn (Container $container): StatisticsRepository => new StatisticsRepository($container->get(PDO::class)));

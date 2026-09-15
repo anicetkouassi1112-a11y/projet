@@ -637,52 +637,9 @@ function normalizeTeeShirtSize(?string $size): string
 }
 
 // ===== CONFIGURATIONS GLOBALES =====
-function getConfig(string $key, ?string $default = null): ?string
-{
-    try {
-        return appContainer()
-            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
-            ->find($key, $default);
-    } catch (PDOException $e) {
-        error_log('Get config error: ' . $e->getMessage());
-        return $default;
-    }
-}
-
-function getConfigAmount(string $key, int $default = 0): int
-{
-    $value = getConfig($key, (string) $default);
-    $amount = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-
-    return $amount === false ? $default : (int) $amount;
-}
-
-function inscriptionBaseAmount(): int
-{
-    return getConfigAmount('inscription_montant', 500);
-}
-
-function teeShirtPrice(): int
-{
-    return getConfigAmount('tee_shirt_prix', 500);
-}
-
 function formatFcfa(int $amount): string
 {
     return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
-}
-
-function setConfig(string $key, ?string $value): bool
-{
-    try {
-        appContainer()
-            ->get(\Patro\Domain\Configuration\Repository\ConfigurationRepository::class)
-            ->save($key, $value);
-        return true;
-    } catch (PDOException $e) {
-        error_log('Set config error: ' . $e->getMessage());
-        return false;
-    }
 }
 
 function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
@@ -750,7 +707,7 @@ function sessionTypeLabel(?string $type): string
 
 function currentSessionType(): string
 {
-    return normalizeSessionType(getConfig('inscription_type_session', 'scolaire'));
+    return appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
 }
 
 function sectionBreakdownEnabled(?string $typeSession = null): bool
@@ -758,81 +715,6 @@ function sectionBreakdownEnabled(?string $typeSession = null): bool
     return normalizeSessionType($typeSession, currentSessionType()) !== 'scolaire';
 }
 
-function getConfigDateDebut(): ?string
-{
-    return getConfig('inscription_date_debut');
-}
-
-function getConfigDateFin(): ?string
-{
-    return getConfig('inscription_date_fin');
-}
-
-function inscriptionForceFerme(): bool
-{
-    return getConfig('inscription_force_ferme', 'off') === 'on';
-}
-
-/**
- * Vérifie si les inscriptions sont ouvertes (selon la date ET le forçage)
- */
-function inscriptionsOpen(): bool
-{
-    // Si forçage actif, c'est fermé
-    if (inscriptionForceFerme()) {
-        return false;
-    }
-
-    $debut = getConfigDateDebut();
-    $fin = getConfigDateFin();
-
-    // Sans période définie, c'est ouvert
-    if (!$debut && !$fin) {
-        return true;
-    }
-
-    $aujourdhui = date('Y-m-d');
-
-    // Période complète
-    if ($debut && $fin) {
-        return $aujourdhui >= $debut && $aujourdhui <= $fin;
-    }
-
-    // Only debut
-    if ($debut) {
-        return $aujourdhui >= $debut;
-    }
-
-    // Only fin
-    if ($fin) {
-        return $aujourdhui <= $fin;
-    }
-
-    return true;
-}
-
-/**
- * Message si inscriptions fermées
- */
-function inscriptionClosedMessage(): string
-{
-    $debut = getConfigDateDebut();
-    $fin = getConfigDateFin();
-
-    if (inscriptionForceFerme()) {
-        return 'Les inscriptions sont actuellement fermees. Veuillez contacter l\'administrateur.';
-    }
-
-    if ($debut && $fin) {
-        return sprintf(
-            'Les inscriptions sont ouvertes du %s au %s.',
-            date('d/m/Y', strtotime($debut)),
-            date('d/m/Y', strtotime($fin))
-        );
-    }
-
-    return 'Les inscriptions sont fermees.';
-}
 
 function calculateAge(string $dateNaissance, ?int $referenceYear = null): ?int
 {
@@ -970,7 +852,9 @@ function enregistrerInscrit(
         new \Patro\Application\Inscription\EnregistrerInscritCommand(
             $nom, $prenom, $dateNaissance, $genre, $tel, $adresse, $prixChoisi,
             $tailleTeeShirt, $annee ?: (int) date('Y'), $typeSession,
-            inscriptionBaseAmount(), teeShirtPrice(), sectionBreakdownEnabled($typeSession),
+            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->registrationAmount(),
+            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->teeShirtPrice(),
+            sectionBreakdownEnabled($typeSession),
             app_int('IDENTIFIANT_ORDER_DIGITS', 3)
         )
     );

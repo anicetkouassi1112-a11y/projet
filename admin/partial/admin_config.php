@@ -5,6 +5,7 @@ require_once __DIR__ . '/utilitaire.php';
 require_once __DIR__ . '/backups.php';
 
 requireRole(['directeur'], '../Auth/login.php');
+$configuration = appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class);
 
 $configPages = ['general', 'sauvegarde'];
 $configPage = (string) ($_GET['config_page'] ?? 'general');
@@ -35,13 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'La date de debut doit etre avant la date de fin.';
                 $alertType = 'danger';
             } else {
-                setConfig('inscription_date_debut', $dateDebut ?: null);
-                setConfig('inscription_date_fin', $dateFin ?: null);
+                $configuration->set('inscription_date_debut', $dateDebut ?: null);
+                $configuration->set('inscription_date_fin', $dateFin ?: null);
                 $message = 'Periodes d inscriptions mises a jour avec succes.';
             }
         } elseif ($action === 'toggle_fermeture') {
             $forceFerme = isset($_POST['force_ferme']) && $_POST['force_ferme'] === '1';
-            setConfig('inscription_force_ferme', $forceFerme ? 'on' : 'off');
+            $configuration->set('inscription_force_ferme', $forceFerme ? 'on' : 'off');
             $message = $forceFerme ? 'Inscriptions fermees manuellement.' : 'Inscriptions rouvertes manuellement.';
         } elseif ($action === 'update_session_type') {
             $typeSession = normalizeSessionType($_POST['type_session'] ?? null, '');
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Type de session invalide.';
                 $alertType = 'danger';
             } else {
-                setConfig('inscription_type_session', $typeSession);
+                $configuration->set('inscription_type_session', $typeSession);
                 $_SESSION['type_session_active'] = $typeSession;
                 $message = 'Type de session actif mis a jour: ' . sessionTypeLabel($typeSession) . '.';
             }
@@ -61,8 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'Les montants doivent etre des nombres entiers valides.';
                 $alertType = 'danger';
             } else {
-                setConfig('inscription_montant', (string) $montantInscription);
-                setConfig('tee_shirt_prix', (string) $prixTeeShirt);
+                $configuration->set('inscription_montant', (string) $montantInscription);
+                $configuration->set('tee_shirt_prix', (string) $prixTeeShirt);
                 $message = 'Montants d inscription mis a jour avec succes.';
             }
         } elseif ($action === 'create_backup') {
@@ -104,12 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$dateDebutActuel = getConfig('inscription_date_debut', '');
-$dateFinActuel = getConfig('inscription_date_fin', '');
-$forceFermeActuel = inscriptionForceFerme();
+$dateDebutActuel = $configuration->registrationDateStart() ?? '';
+$dateFinActuel = $configuration->registrationDateEnd() ?? '';
+$forceFermeActuel = $configuration->forceRegistrationClosed();
 $typeSessionActuel = currentSessionType();
-$montantInscriptionActuel = inscriptionBaseAmount();
-$prixTeeShirtActuel = teeShirtPrice();
+$montantInscriptionActuel = $configuration->registrationAmount();
+$prixTeeShirtActuel = $configuration->teeShirtPrice();
 $anneeActive = activeYearFromRequest();
 $pageTitle = 'Configuration - administration';
 $assetBase = '../../Backend/Assets';
