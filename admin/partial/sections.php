@@ -2,12 +2,10 @@
 
 require_once __DIR__ . '/utilitaire.php';
 
-function sectionConfig(string $genderKey, ?PDO $connect = null): array
+function sectionConfig(string $genderKey): array
 {
     $genre = $genderKey === 'fille' ? 'Fille' : 'Garçon';
     $sections = [];
-    $connect = $connect ?: getConnection();
-
     foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
         if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) continue;
 
@@ -54,7 +52,8 @@ function genderPageContext(string $genderKey, int $anneeActive, ?string $typeSes
     if (!$showSectionBreakdown) $pageKey = null;
 
     $sessionLabel = sessionTypeLabel($typeSession);
-    $idSession = ensureSession($anneeActive, $typeSession);
+    $idSession = appContainer()->get(\Patro\Inscription\SessionService::class)
+        ->ensureSession($anneeActive, $typeSession);
     $isScolaire = ($typeSession === 'scolaire');
     
     // Récupération de tous les inscrits du genre (avec ou sans section)
@@ -102,14 +101,12 @@ function fetchAnimateursBySectionIds(array $sectionIds, int $idSession, ?string 
 /**
  * Génère la configuration des sections pour les animateurs / animatrices.
  */
-function animateurSectionConfig(string $genderKey, ?PDO $connect = null): array
+function animateurSectionConfig(string $genderKey): array
 {
     $isFemale = in_array(strtolower($genderKey), ['fille', 'animatrice', 'f'], true);
     $genre = $isFemale ? 'Fille' : 'Garçon';
 
     $sections = [];
-    $connect = $connect ?: getConnection();
-
     foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
         if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) {
             continue;
@@ -152,7 +149,8 @@ function genderAnimateurPageContext(string $genderKey, int $anneeActive, ?string
     }
 
     $sessionLabel = sessionTypeLabel($typeSession);
-    $idSession = ensureSession($anneeActive, $typeSession);
+    $idSession = appContainer()->get(\Patro\Inscription\SessionService::class)
+        ->ensureSession($anneeActive, $typeSession);
     $isScolaire = ($typeSession === 'scolaire');
 
     // Récupère tous les animateurs du genre
@@ -212,9 +210,8 @@ function normalizeLookupKey(string $value): string
     return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
 }
 
-function sectionIdsByNames(array $names, ?PDO $connect = null): array
+function sectionIdsByNames(array $names): array
 {
-    $connect = $connect ?: getConnection();
     $wanted = array_map('normalizeLookupKey', $names);
     $ids = [];
 

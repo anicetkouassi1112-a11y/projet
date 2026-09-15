@@ -121,7 +121,8 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccue
                             // Récupérer la session par défaut pour l'année active
                             // On utilise la fonction ensureSession avec le type de session courant (par défaut)
                             $defaultSessionType = currentSessionType(); // ou une valeur fixe selon votre logique
-                            $defaultSessionId = ensureSession($anneeActive, $defaultSessionType);
+                            $defaultSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
+                                ->ensureSession($anneeActive, $defaultSessionType);
 
                             // On peut aussi rechercher dans $sessions pour avoir le libellé
                             $activeSession = null;

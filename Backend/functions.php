@@ -702,28 +702,6 @@ function setConfig(string $key, ?string $value): bool
     }
 }
 
-// Cree ou retrouve la session SQL correspondant a l annee et au type actifs.
-function ensureSession(int $anneeVal, string $typeSession): int
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->ensureSession($anneeVal, $typeSession);
-}
-
-function sessionLabelById(int $idSession): string
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SessionService::class)
-        ->sessionLabelById($idSession);
-}
-
-function sectionIntervalOverlap(string $genre, int $ageMin, int $ageMax, ?PDO $connect = null): array
-{
-    return appContainer()
-        ->get(\Patro\Inscription\SectionService::class)
-        ->sectionIntervalOverlap($genre, $ageMin, $ageMax);
-}
-
 function creerSection(string $nomSection, string $description = '', string $genre = '', int|string|null $ageMin = null, int|string|null $ageMax = null): array
 {
     $ageMin = filter_var($ageMin, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 120]]);
@@ -799,12 +777,6 @@ function loginAnimateur(string $nom_a, string $password): array
         ->execute($nom_a, $password, getActiveAdminSessionId());
 }
 // Bloque les animateurs actifs qui ne possedent pas de ligne animateur_session.
-function blockAnimateursNotRegistered(int $idSession): int
-{
-    return appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class)
-        ->blockNotRegistered($idSession);
-}
-
 function validSessionTypes(): array
 {
     return ['scolaire', 'vacance'];
