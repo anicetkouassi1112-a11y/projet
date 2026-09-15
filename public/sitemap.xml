@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost/Projet_patro-1/public/home.php?page=accueil</loc></url>
+  <url><loc>http://localhost/Projet_patro-1/public/home.php?page=apropos</loc></url>
+  <url><loc>http://localhost/Projet_patro-1/public/home.php?page=activites</loc></url>
+  <url><loc>http://localhost/Projet_patro-1/public/auth/inscription.php</loc></url>
+</urlset>

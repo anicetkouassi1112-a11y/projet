@@ -1,0 +1,17 @@
+Options -Indexes
+
+AddType application/manifest+json .webmanifest
+
+<FilesMatch "^(\.env|composer\.(json|lock)|\.gitignore|\.gitattributes|site\.webmanifest)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(php|phtml|phar|cgi|pl|asp|aspx|jsp|exe|bat|cmd|sh|ps1|msi)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(\.git|\.github|\.sixth|Database|backups|include|nbproject|partial|vendor|views)(/|$) - [F,L]
+    RewriteRule ^(Assets|uploads)/.*\.(php|phtml|phar|cgi|pl|asp|aspx|jsp|exe|bat|cmd|sh|ps1|msi)$ - [F,L,NC]
+</IfModule>

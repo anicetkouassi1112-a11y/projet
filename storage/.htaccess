@@ -1,0 +1,2 @@
+# Interdit l'acces HTTP direct au stockage hors webroot
+Require all denied

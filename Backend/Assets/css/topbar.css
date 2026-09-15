@@ -1,0 +1,366 @@
+/*
+ * topbar.css — Navigation unifiée public & admin
+ *
+ * Sélecteurs public : .public-navbar, .public-nav-inner, .public-nav-links, .public-nav-actions
+ * Sélecteurs admin  : .navbar, .navbar-nav, .navbar-search-form
+ * Sélecteurs communs: .navbar-brand, .navbar-toggler, .animateur-link, .nav-register
+ */
+
+/* ════════════════════════════════════════════
+   TOKENS
+   ════════════════════════════════════════════ */
+:root {
+    --tb-bg:            rgba(255, 255, 255, 0.96);
+    --tb-bg-public:     rgba(255, 253, 248, 0.96);
+    --tb-border:        rgba(220, 228, 239, 0.90);
+    --tb-border-solid:  #dce4ef;
+    --tb-text:          #172033;
+    --tb-soft:          #46566f;
+    --tb-muted:         #74839a;
+    --tb-primary:       #2454d6;
+    --tb-primary-dark:  #193b9f;
+    --tb-primary-soft:  #edf1ff;
+    --tb-accent:        #f7931e;     /* bouton Inscription */
+    --tb-danger:        #c73535;
+    --tb-danger-bg:     #fff0f0;
+    --tb-shadow:        0 1px 2px rgba(23, 32, 51, 0.06), 0 4px 20px rgba(23, 32, 51, 0.07);
+    --tb-radius:        8px;
+    --tb-font:          "Inter", "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+    --tb-h-admin:       68px;
+    --tb-h-public:      92px;
+}
+
+
+/* ════════════════════════════════════════════
+   PARTAGÉ — BRAND
+   ════════════════════════════════════════════ */
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    color: var(--tb-text) !important;
+    font-family: var(--tb-font);
+    font-size: 15px;
+    font-weight: 900;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+/* Logo via pseudo-élément — même image, taille commune */
+.navbar-brand::before {
+    content: "";
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: url('../img/logo_patro.jpeg') center / cover no-repeat;
+    box-shadow: 0 8px 20px rgba(36, 84, 214, 0.22);
+}
+
+/* Le nom en bleu primaire */
+.navbar-brand span {
+    color: var(--tb-primary);
+    font-size: 1.35rem;
+    font-weight: 950;
+}
+
+/* Suffixe contextuel : « admin », « public », etc. */
+.navbar-brand .brand-suffix {
+    font-size: 0.68em;
+    font-weight: 700;
+    color: var(--tb-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+
+/* ════════════════════════════════════════════
+   PARTAGÉ — TOGGLER MOBILE
+   ════════════════════════════════════════════ */
+.navbar-toggler {
+    margin-left: auto;
+    padding: 8px 10px;
+    border: 1px solid var(--tb-border-solid);
+    border-radius: var(--tb-radius);
+    background: #ffffff;
+}
+
+.navbar-toggler-icon {
+    display: block;
+    width: 20px;
+    height: 14px;
+    border-top: 2px solid var(--tb-soft);
+    border-bottom: 2px solid var(--tb-soft);
+    position: relative;
+}
+
+.navbar-toggler-icon::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    border-top: 2px solid var(--tb-soft);
+}
+
+.navbar-collapse {
+    flex: 1 1 auto;
+}
+
+
+/* ════════════════════════════════════════════
+   PARTAGÉ — LIEN ANIMATEUR / CONNEXION
+   ════════════════════════════════════════════ */
+.animateur-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 1px solid var(--tb-border-solid);
+    border-radius: var(--tb-radius);
+    color: var(--tb-soft);
+    background: #ffffff;
+    font-family: var(--tb-font);
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(23, 32, 51, 0.06);
+    transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.animateur-link:hover,
+.animateur-link:focus {
+    color: var(--tb-primary);
+    border-color: #b8c8f4;
+    background: var(--tb-primary-soft);
+}
+
+
+/* ════════════════════════════════════════════
+   PARTAGÉ — BOUTON INSCRIPTION
+   ════════════════════════════════════════════ */
+.nav-register {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #ff9f2e, #f47d12);
+    font-family: var(--tb-font);
+    font-size: 14px;
+    font-weight: 900;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 12px 28px rgba(247, 147, 30, 0.28);
+    transition: background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.nav-register:hover,
+.nav-register:focus {
+    background: linear-gradient(135deg, #f58d1a, #e86f0b);
+    box-shadow: 0 8px 18px rgba(247, 147, 30, 0.38);
+    color: #ffffff !important;
+}
+
+
+
+.navbar > .container-fluid {
+    min-height: var(--tb-h-admin);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-right: clamp(16px, 2.4vw, 32px);
+    padding-left: clamp(16px, 2.4vw, 32px);
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav-item,
+.nav-items {
+    display: flex;
+    align-items: center;
+}
+
+
+/* ════════════════════════════════════════════
+   PUBLIC — .public-navbar
+   Transparent sur accueil, solide ailleurs
+   ════════════════════════════════════════════ */
+.public-navbar {
+    background: var(--tb-bg-public);
+    border-bottom: 1px solid var(--tb-border) !important;
+    box-shadow: var(--tb-shadow);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    position: relative;
+    font-family: var(--tb-font);
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Logo plus grand sur la barre publique */
+.public-navbar .navbar-brand::before {
+    width: 56px;
+    height: 56px;
+}
+
+/* Solide : pages intérieures */
+.public-navbar.public-navbar-solid {
+    background: var(--tb-bg-public);
+    border-bottom: 1px solid var(--tb-border) !important;
+    box-shadow: var(--tb-shadow);
+}
+
+.public-nav-inner {
+    min-height: var(--tb-h-public);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-right: clamp(18px, 4vw, 58px);
+    padding-left: clamp(18px, 4vw, 58px);
+}
+
+/* Liens de navigation */
+.public-nav-links {
+    display: flex;
+    gap: clamp(8px, 1.6vw, 28px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.public-nav-links .nav-link {
+    position: relative;
+    padding: 10px 0;
+    color: var(--tb-text);
+    font-family: var(--tb-font);
+    font-size: 14px;
+    font-weight: 850;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+/* Soulignement animé */
+.public-nav-links .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--tb-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 180ms ease;
+}
+
+.public-nav-links .nav-link:hover::after,
+.public-nav-links .nav-link:focus::after,
+.public-nav-links .nav-link.active::after {
+    transform: scaleX(1);
+}
+
+/* Zone d'actions */
+.public-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — commun aux deux barres
+   ════════════════════════════════════════════ */
+@media (max-width: 991.98px) {
+
+    /* Admin : menu déroulant */
+    .navbar-collapse {
+        position: absolute;
+        top: var(--tb-h-admin);
+        left: 16px;
+        right: 16px;
+        padding: 16px;
+        border: 1px solid var(--tb-border-solid);
+        border-radius: var(--tb-radius);
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(23, 32, 51, 0.10);
+    }
+
+    .navbar-collapse:not(.show) { display: none; }
+    .navbar-collapse.show { display: block; }
+
+    .navbar-nav {
+        align-items: stretch;
+        flex-direction: column;
+        margin-top: 12px;
+    }
+
+    .navbar-search-form {
+        width: 100%;
+    }
+
+    /* Public : hauteur réduite + menu déroulant */
+    .public-navbar {
+        min-height: 70px;
+    }
+
+    .public-nav-inner {
+        min-height: 70px;
+    }
+
+    /* Menu public déroulant — position basée sur hauteur mobile */
+    .public-navbar .navbar-collapse {
+        top: 70px;
+    }
+
+    .public-nav-links,
+    .public-nav-actions {
+        align-items: stretch !important;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .public-nav-links {
+        margin-top: 12px;
+    }
+
+    .public-nav-actions {
+        margin-top: 12px;
+    }
+
+    .animateur-link,
+    .nav-register {
+        justify-content: flex-start;
+    }
+
+    .nav-register {
+        border-radius: var(--tb-radius);
+        min-height: 44px;
+        padding: 0 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .public-navbar,
+    .public-nav-links .nav-link::after,
+    .animateur-link,
+    .nav-register,
+    .navbar .dropdown-item {
+        transition: none !important;
+    }
+}

@@ -1,0 +1,184 @@
+﻿
+:root {
+    color-scheme: light;
+    --bg: #f5f7fb;
+    --bg-strong: #e9eef6;
+    --surface: #ffffff;
+    --surface-2: #f8fafc;
+    --surface-3: #eef3f8;
+    --text: #172033;
+    --text-soft: #46566f;
+    --text-muted: #74839a;
+    --border: #dce4ef;
+    --border-soft: #edf1f6;
+    --primary: #2454d6;
+    --primary-dark: #193b9f;
+    --primary-soft: #eaf0ff;
+    --accent: #0f9f8f;
+    --accent-soft: #e6f7f4;
+    --success: #14804a;
+    --success-soft: #e9f7ef;
+    --warning: #b86b00;
+    --warning-soft: #fff4de;
+    --danger: #c73535;
+    --danger-soft: #fff0f0;
+    --info: #2563eb;
+    --info-soft: #edf4ff;
+    --sidebar: #111827;
+    --sidebar-2: #1f2937;
+    --sidebar-text: #e5edf8;
+    --sidebar-muted: #9caac0;
+    --shadow-sm: 0 1px 2px rgba(23, 32, 51, 0.06);
+    --shadow-md: 0 14px 35px rgba(23, 32, 51, 0.10);
+    --shadow-lg: 0 28px 70px rgba(23, 32, 51, 0.16);
+    --radius: 7px;
+    --radius-lg: 8px;
+    --topbar-height: 68px;
+    --sidebar-width: 238px;
+    --font: "Inter", "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+}
+
+@font-face {
+    font-family: "Glyphicons Halflings";
+    src: url("../fonts/glyphicons-halflings-regular.woff2") format("woff2"),
+         url("../fonts/glyphicons-halflings-regular.woff") format("woff");
+    font-style: normal;
+    font-weight: normal;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    min-height: 100%;
+    background: var(--bg);
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    color: var(--text);
+    background:
+        linear-gradient(180deg, #fbfcff 0, var(--bg) 280px),
+        var(--bg);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.55;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.homet{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 900;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover,
+a:focus {
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.container,
+.container-fluid {
+    width: 100%;
+}
+
+.container-fluid {
+    padding-right: clamp(16px, 2.4vw, 32px);
+    padding-left: clamp(16px, 2.4vw, 32px);
+}
+
+.glyphicon {
+    position: relative;
+    top: 1px;
+    display: inline-block;
+    min-width: 1em;
+    font-family: "Glyphicons Halflings";
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1;
+    text-align: center;
+    -webkit-font-smoothing: antialiased;
+}
+
+.glyphicon-search::before { content: "\e003"; }
+.glyphicon-home::before { content: "\e021"; }
+.glyphicon-dashboard::before { content: "\e141"; }
+.glyphicon-plus::before { content: "\002b"; }
+.glyphicon-th-list::before { content: "\e012"; }
+.glyphicon-cog::before { content: "\e019"; }
+.glyphicon-log-out::before { content: "\e163"; }
+.glyphicon-log-in::before { content: "\e161"; }
+.glyphicon-arrow-left::before { content: "\e091"; }
+.glyphicon-map-marker::before { content: "\e062"; }
+.glyphicon-download-alt::before { content: "\e026"; }
+.glyphicon-lock::before { content: "\e033"; }
+.glyphicon-pencil::before { content: "\270f"; }
+.glyphicon-ok::before { content: "\e013"; }
+.glyphicon-remove::before { content: "\e014"; }
+.glyphicon-trash::before { content: "\e020"; }
+.glyphicon-file::before { content: "\e022"; }
+
+
+.footer {
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    background: #ffffff;
+}
+
+.footer .container {
+    width: 100%;
+}
+
+.text-muted { color: var(--text-muted) !important; }
+.text-center { text-align: center !important; }
+.py-4 { padding-top: 24px !important; padding-bottom: 24px !important; }
+.mb-3 { margin-bottom: 12px !important; }
+.mt-2 { margin-top: 8px !important; }
+.me-2 { margin-right: 8px !important; }
+.mr-2 { margin-right: 8px !important; }
+.mr-3 { margin-right: 12px !important; }
+.gap-2 { gap: 8px !important; }
+.d-flex { display: flex !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+

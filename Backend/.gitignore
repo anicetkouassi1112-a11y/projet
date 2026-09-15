@@ -1,0 +1,20 @@
+# IDE and local tooling
+.github/instructions/codacy.instructions.md
+.idea/
+.vscode/
+nbproject/
+.sixth/
+
+# Local configuration
+.env
+
+# Runtime files
+uploads/photos/*
+!uploads/photos/.gitkeep
+backups/*
+!backups/.htaccess
+Assets/img/*.pdf
+Assets/img/*.exe
+
+# Dependency/cache folders generated outside Composer workflows
+node_modules/

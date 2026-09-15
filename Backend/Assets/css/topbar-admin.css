@@ -1,0 +1,231 @@
+/*
+ * topbar-admin.css — Navigation back-office
+ *
+ * Sélecteurs : .navbar, .navbar-nav, .navbar-search-form, .dropdown-item
+ */
+
+/* ════════════════════════════════════════════
+   RESET DEFENSIF — supprime la marge par defaut du
+   navigateur sur body, cause classique d'une bande
+   blanche au-dessus d'une nav en position: sticky; top:0
+   ════════════════════════════════════════════ */
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+/* ════════════════════════════════════════════
+   TOKENS
+   ════════════════════════════════════════════ */
+:root {
+    --tb-bg:            rgba(255, 255, 255, 0.96);
+    --tb-border:        rgba(220, 228, 239, 0.90);
+    --tb-border-solid:  #dce4ef;
+    --tb-text:          #172033;
+    --tb-soft:          #46566f;
+    --tb-muted:         #74839a;
+    --tb-primary:       #2454d6;
+    --tb-primary-soft:  #edf1ff;
+    --tb-danger:        #c73535;
+    --tb-danger-bg:     #fff0f0;
+    --tb-shadow:        0 1px 2px rgba(23, 32, 51, 0.06), 0 4px 20px rgba(23, 32, 51, 0.07);
+    --tb-radius:        8px;
+    --tb-font:          "Inter", "Segoe UI", Roboto, Arial, Helvetica, sans-serif;
+    --tb-h-admin:       68px;
+}
+
+
+/* ════════════════════════════════════════════
+   BRAND
+   ════════════════════════════════════════════ */
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0;
+    color: var(--tb-text) !important;
+    font-family: var(--tb-font);
+    font-size: 15px;
+    font-weight: 900;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+/* Logo via pseudo-élément */
+.navbar-brand::before {
+    content: "";
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    background: url('../img/logo_patro.jpeg') center / cover no-repeat;
+    box-shadow: 0 8px 20px rgba(36, 84, 214, 0.22);
+}
+
+/* Le nom en bleu primaire */
+.navbar-brand span {
+    color: var(--tb-primary);
+    font-size: 1.35rem;
+    font-weight: 950;
+}
+
+/* Suffixe contextuel : « admin » */
+.navbar-brand .brand-suffix {
+    font-size: 0.68em;
+    font-weight: 700;
+    color: var(--tb-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+
+/* ════════════════════════════════════════════
+   TOGGLER MOBILE
+   ════════════════════════════════════════════ */
+.navbar-toggler {
+    margin-left: auto;
+    padding: 8px 10px;
+    border: 1px solid var(--tb-border-solid);
+    border-radius: var(--tb-radius);
+    background: #ffffff;
+}
+
+.navbar-toggler-icon {
+    display: block;
+    width: 20px;
+    height: 14px;
+    border-top: 2px solid var(--tb-soft);
+    border-bottom: 2px solid var(--tb-soft);
+    position: relative;
+}
+
+.navbar-toggler-icon::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 4px;
+    border-top: 2px solid var(--tb-soft);
+}
+
+.navbar-collapse {
+    flex: 1 1 auto;
+}
+
+
+/* ════════════════════════════════════════════
+   BARRE ADMIN — .navbar
+   Toujours solide, hauteur compacte
+   ════════════════════════════════════════════ */
+.navbar {
+    min-height: var(--tb-h-admin);
+    margin: 0;
+    border: 0 !important;
+    border-bottom: 1px solid var(--tb-border) !important;
+    background: var(--tb-bg);
+    box-shadow: var(--tb-shadow);
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    font-family: var(--tb-font);
+}
+
+.navbar > .container-fluid {
+    min-height: var(--tb-h-admin);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding-right: clamp(16px, 2.4vw, 32px);
+    padding-left: clamp(16px, 2.4vw, 32px);
+}
+
+.navbar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav-item,
+.nav-items {
+    display: flex;
+    align-items: center;
+}
+
+/* Formulaire de recherche */
+.navbar-search-form {
+    width: min(480px, 45vw);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Bouton déconnexion */
+.navbar .dropdown-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 1px solid var(--tb-border-solid);
+    border-radius: var(--tb-radius);
+    color: var(--tb-soft);
+    background: #ffffff;
+    font-family: var(--tb-font);
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(23, 32, 51, 0.06);
+    transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+    color: var(--tb-danger);
+    border-color: #f0b4b4;
+    background: var(--tb-danger-bg);
+}
+
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════ */
+@media (max-width: 991.98px) {
+
+    .navbar-collapse {
+        position: absolute;
+        top: var(--tb-h-admin);
+        left: 16px;
+        right: 16px;
+        padding: 16px;
+        border: 1px solid var(--tb-border-solid);
+        border-radius: var(--tb-radius);
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(23, 32, 51, 0.10);
+    }
+
+    .navbar-collapse:not(.show) { display: none; }
+    .navbar-collapse.show { display: block; }
+
+    .navbar-nav {
+        align-items: stretch;
+        flex-direction: column;
+        margin-top: 12px;
+    }
+
+    .navbar-search-form {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navbar-brand,
+    .navbar .dropdown-item {
+        transition: none !important;
+    }
+}
