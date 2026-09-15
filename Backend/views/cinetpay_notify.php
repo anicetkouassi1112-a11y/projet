@@ -83,11 +83,7 @@ try {
     ]);
 
     if ($status === 'ACCEPTED') {
-        $stmt = $conn->prepare('UPDATE inscription SET etat = :etat WHERE id_inscription = :id_inscrit');
-        $stmt->execute([
-            ':etat' => 'inscrit',
-            ':id_inscrit' => (int) ($transaction['id_inscrit'] ?? 0),
-        ]);
+        cinetpayMarkInscriptionState((int) ($transaction['id_inscrit'] ?? 0), 'inscrit');
     }
 
     echo 'OK';
@@ -98,4 +94,3 @@ try {
     error_log('CinetPay notify error: ' . $e->getMessage());
     echo 'OK';
 }
-

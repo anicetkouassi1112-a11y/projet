@@ -66,6 +66,11 @@ function cinetpayUpdateTransaction(PDO $conn, string $transactionId, array $valu
     cinetpayService()->updateTransaction($transactionId, $values);
 }
 
+function cinetpayMarkInscriptionState(int $idInscrit, string $state): void
+{
+    cinetpayService()->markInscriptionState($idInscrit, $state);
+}
+
 function cinetpayVerifyTransaction(string $transactionId): array
 {
     return cinetpayService()->verifyTransaction($transactionId);

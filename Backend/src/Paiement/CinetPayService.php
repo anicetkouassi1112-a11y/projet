@@ -245,6 +245,11 @@ class CinetPayService
         $this->transactionRepository->update($transactionId, $values);
     }
 
+    public function markInscriptionState(int $inscriptionId, string $state): void
+    {
+        $this->inscriptionRepository->updateState($inscriptionId, $state);
+    }
+
     // Méthodes privées
 
     private function curlRequest(string $url, string $body, array $headers): array

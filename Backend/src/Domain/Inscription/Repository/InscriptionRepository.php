@@ -64,6 +64,35 @@ final class InscriptionRepository
     }
 
     /** @return list<array<string,mixed>> */
+    public function search(string $term, int $yearId, string $sessionType, string $state = 'inscrit'): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT u.*, i.id_inscription AS id_inscrit, i.id_inscription,
+                    i.id_section, i.identifiant, i.etat, i.montant_inscription,
+                    i.prix_tee_shirt, i.taille_tee_shirt,
+                    s.nom_section AS section
+             FROM inscription i
+             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
+             LEFT JOIN section s ON s.id_section = i.id_section
+             INNER JOIN session ses ON ses.id_session = i.id_session
+             WHERE ses.annee_id = :year_id
+               AND ses.type_session = :session_type
+               AND i.etat = :state
+               AND (u.nom LIKE :term OR u.prenom LIKE :term
+                    OR CONCAT(u.nom, " ", u.prenom) LIKE :term)
+             ORDER BY i.id_inscription ASC'
+        );
+        $statement->execute([
+            ':year_id' => $yearId,
+            ':session_type' => $sessionType,
+            ':state' => $state,
+            ':term' => '%' . $term . '%',
+        ]);
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** @return list<array<string,mixed>> */
     public function findBySections(array $sectionIds, int $sessionId, ?string $genre, string $state = 'inscrit'): array
     {
         return $this->findBySectionIds($sectionIds, $sessionId, $genre, false, $state);
@@ -116,6 +145,16 @@ final class InscriptionRepository
         $value = $statement->fetchColumn();
 
         return $value === false ? null : (int) $value;
+    }
+
+    public function updateState(int $inscriptionId, string $state): bool
+    {
+        $statement = $this->connection->prepare(
+            'UPDATE inscription SET etat = :state WHERE id_inscription = :id'
+        );
+        $statement->execute([':state' => $state, ':id' => $inscriptionId]);
+
+        return $statement->rowCount() > 0;
     }
 
     /** @return array{identifiant:string,ordre_inscription:int} */

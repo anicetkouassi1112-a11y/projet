@@ -12,12 +12,7 @@ require_once __DIR__ . '/site.php';
 
 function input(string $name): string
 {
-    if (class_exists('\Patro\Http\RequestHelper')) {
-        return \Patro\Http\RequestHelper::input($name);
-    }
-    
-    $value = $_POST[$name] ?? '';
-    return appCleanText((string) $value, 255);
+    return \Patro\Http\RequestHelper::input($name);
 }
 
 function lien(string $page, array|string $params = [], bool $forPublic = false): string {
@@ -64,64 +59,22 @@ function selectedYearId(int $anneeActive): int
 
 function activeYearFromRequest(): int
 {
-    if (class_exists('\Patro\Http\RequestHelper')) {
-        return \Patro\Http\RequestHelper::activeYearFromRequest();
-    }
-    
-    $defaultYear = (int) ($_SESSION['annee_active'] ?? date('Y'));
-    $year = requestIntParam('annee', $defaultYear, 2000, 2100);
-    
-    if ($year < 2000 || $year > 2100) {
-        $year = (int) date('Y');
-    }
-
-    $_SESSION['annee_active'] = $year;
-    return $year;
+    return \Patro\Http\RequestHelper::activeYearFromRequest();
 }
 
 function activeSessionTypeFromRequest(): string
 {
-    if (class_exists('\Patro\Http\RequestHelper')) {
-        return \Patro\Http\RequestHelper::activeSessionTypeFromRequest(currentSessionType());
-    }
-    
-    $requestedType = requestTextParam('type_session', 50);
-    $sessionType = (string) ($_SESSION['type_session_active'] ?? currentSessionType());
-    
-    $typeSession = $requestedType !== '' 
-        ? normalizeSessionType($requestedType, currentSessionType())
-        : normalizeSessionType($sessionType, currentSessionType());
-
-    $_SESSION['type_session_active'] = $typeSession;
-    return $typeSession;
+    return \Patro\Http\RequestHelper::activeSessionTypeFromRequest(currentSessionType());
 }
 
 function displayYearFromRequest(?int $defaultYear = null): int
 {
-    if (class_exists('\Patro\Http\RequestHelper')) {
-        return \Patro\Http\RequestHelper::displayYearFromRequest($defaultYear);
-    }
-    
-    $year = requestIntParam('annee', $defaultYear ?? (int) ($_SESSION['annee_active'] ?? date('Y')), 2000, 2100);
-    if ($year < 2000 || $year > 2100) {
-        return (int) date('Y');
-    }
-
-    return $year;
+    return \Patro\Http\RequestHelper::displayYearFromRequest($defaultYear);
 }
 
 function displaySessionTypeFromRequest(?string $defaultType = null): string
 {
-    if (class_exists('\Patro\Http\RequestHelper')) {
-        return \Patro\Http\RequestHelper::displaySessionTypeFromRequest($defaultType, currentSessionType());
-    }
-    
-    $fallback = normalizeSessionType($defaultType ?? (string) ($_SESSION['type_session_active'] ?? currentSessionType()), currentSessionType());
-    $requestedType = requestTextParam('type_session', 50);
-
-    return $requestedType !== '' 
-        ? normalizeSessionType($requestedType, $fallback)
-        : $fallback;
+    return \Patro\Http\RequestHelper::displaySessionTypeFromRequest($defaultType, currentSessionType());
 }
 
 function redirectWithoutActionParams(int $anneeActive, ?string $typeSession = null): void
@@ -151,44 +104,16 @@ function traiterRecherche(string $search, int $annee, ?string $typeSession = nul
     }
     
     try {
-        $conn    = getConnection();
-        $anneeId = ensureAnnee($annee, $conn);
+        $anneeId = ensureAnnee($annee);
         $typeSession = normalizeSessionType($typeSession, currentSessionType());
-        $stmt    = $conn->prepare(
-            'SELECT u.*,
-                    i.id_inscription AS id_inscrit,
-                    i.id_inscription,
-                    i.id_section,
-                    i.identifiant,
-                    i.etat,
-                    i.montant_inscription,
-                    i.prix_tee_shirt,
-                    i.taille_tee_shirt,
-                    s.nom_section AS section
-             FROM inscription i
-             INNER JOIN utilisateur u ON u.id_utilisateur = i.id_utilisateur
-             LEFT JOIN section s ON s.id_section = i.id_section
-             INNER JOIN session ses ON ses.id_session = i.id_session
-             WHERE ses.annee_id = :annee_id
-               AND ses.type_session = :type_session
-               AND i.etat = :etat
-               AND (u.nom LIKE :search_nom OR u.prenom LIKE :search_prenom OR CONCAT(u.nom, " ", u.prenom) LIKE :search_fullname)
-             ORDER BY i.id_inscription ASC'
-        );
-        $searchTerm = '%' . $search . '%';
-        $stmt->execute([
-            ':annee_id' => $anneeId,
-            ':type_session' => $typeSession,
-            ':etat' => 'inscrit',
-            ':search_nom' => $searchTerm,
-            ':search_prenom' => $searchTerm,
-            ':search_fullname' => $searchTerm,
-        ]);
+        $inscrits = appContainer()
+            ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
+            ->search($search, $anneeId, $typeSession);
 
         return [
             'success'  => true,
             'message'  => '',
-            'inscrits' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+            'inscrits' => $inscrits,
         ];
     } catch (PDOException $e) {
         error_log('Search error: ' . $e->getMessage());
