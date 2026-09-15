@@ -5,16 +5,16 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
 
 $conn = getConnection();
-$animateurRepository = new \Patro\Domain\Animateur\Repository\AnimateurRepository($conn);
+$animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
 $anneeActive = activeYearFromRequest();
 $typeSessionActive = activeSessionTypeFromRequest();
-$currentSessionId = ensureSession($anneeActive, $typeSessionActive, $conn);
+$currentSessionId = ensureSession($anneeActive, $typeSessionActive);
 $isScolaire = ($typeSessionActive === 'scolaire');
 
 $message = '';
 $alertType = 'success';
 
-$sections = getAllSections($conn);
+$sections = getAllSections();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {

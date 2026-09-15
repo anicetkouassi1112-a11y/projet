@@ -15,7 +15,7 @@ if (!verifyCsrfToken($_POST['csrf_token'] ?? null)) {
 
 try {
     $anneeActuelle = date('Y');
-    $service = new \Patro\Inscription\SessionService();
+    $service = appContainer()->get(\Patro\Inscription\SessionService::class);
     $service->ensureAnnee((int) $anneeActuelle);
     setFlashMessage('success', 'Passage à la nouvelle année (' . $anneeActuelle . ') réussi. Les données de l\'année précédente sont conservées.');
 

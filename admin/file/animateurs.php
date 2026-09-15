@@ -6,9 +6,9 @@ requireRole(['directeur'], '../Auth/login.php');
 
 $anneeActive = activeYearFromRequest();
 $typeSessionActive = activeSessionTypeFromRequest();
-$sessionService = new \Patro\Inscription\SessionService();
+$sessionService = appContainer()->get(\Patro\Inscription\SessionService::class);
 $currentSessionId = $sessionService->ensureSession($anneeActive, $typeSessionActive);
-$animateurRepository = new \Patro\Domain\Animateur\Repository\AnimateurRepository(getConnection());
+$animateurRepository = appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class);
 $isScolaire = ($typeSessionActive === 'scolaire');
 
 $message = '';

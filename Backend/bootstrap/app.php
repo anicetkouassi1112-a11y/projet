@@ -24,6 +24,7 @@ use Patro\Application\Inscription\ModifierInscrit;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
 use Patro\Application\Animateur\AuthentifierAnimateur;
+use Patro\Application\Animateur\AnimateurGameCatalog;
 use Patro\Application\Animateur\AnimateurAuthorizationService;
 use Patro\Application\Auth\AdminAuthenticationService;
 use Patro\Application\Auth\AuthorizationService;
@@ -62,6 +63,10 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     ));
     $container->singleton(AuthentifierAnimateur::class, static fn (Container $container): AuthentifierAnimateur => new AuthentifierAnimateur(
         $container->get(AnimateurRepository::class)
+    ));
+    $container->singleton(AnimateurGameCatalog::class, static fn (Container $container): AnimateurGameCatalog => new AnimateurGameCatalog(
+        $container->get(SectionRepository::class),
+        $container->get(JeuRepository::class)
     ));
     $container->singleton(AnimateurAuthorizationService::class, static fn (Container $container): AnimateurAuthorizationService => new AnimateurAuthorizationService(
         $container->get(SessionManager::class)

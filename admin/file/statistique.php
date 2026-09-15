@@ -16,7 +16,7 @@ $pendingCount = 0;
 $totaux = [];
 
 try {
-    $statisticsRepository = new \Patro\Domain\Statistics\Repository\StatisticsRepository(getConnection());
+    $statisticsRepository = appContainer()->get(\Patro\Domain\Statistics\Repository\StatisticsRepository::class);
     $totaux = $statisticsRepository->totals(
         $anneeId,
         $typeSessionActive,

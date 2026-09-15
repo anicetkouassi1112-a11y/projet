@@ -29,6 +29,7 @@ $requiredServices = [
     Patro\Application\Animateur\InscrireAnimateurParCode::class,
     Patro\Application\Animateur\GenererCodesAnimateur::class,
     Patro\Application\Animateur\AuthentifierAnimateur::class,
+    Patro\Application\Animateur\AnimateurGameCatalog::class,
     Patro\Application\Animateur\AnimateurAuthorizationService::class,
     Patro\Application\Auth\AdminAuthenticationService::class,
     Patro\Application\Auth\AuthorizationService::class,

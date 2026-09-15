@@ -137,8 +137,7 @@ function deleteJeu(int $id): array
 function getVisibleActiviteImages(?PDO $connect = null): array
 {
     try {
-        $connect = $connect ?: getConnection();
-        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         if (!$repository->ensureSessionColumn()) {
             return [];
         }
@@ -153,8 +152,7 @@ function getVisibleActiviteImages(?PDO $connect = null): array
 function getAllActiviteImages(?PDO $connect = null): array
 {
     try {
-        $connect = $connect ?: getConnection();
-        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         if (!$repository->ensureSessionColumn()) {
             return [];
         }
@@ -219,8 +217,7 @@ function saveActiviteImageUpload(array $file, string $titre = '', int $ordre = 0
     $ordre = max(0, min(9999, $ordre));
     $description = appCleanText($description, 5000);
     try {
-        $connect = getConnection();
-        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
 
         $id = $repository->create(getActiveAdminSessionId(), $titre, $storedPath, $ordre, $visible, $description);
@@ -243,8 +240,7 @@ function updateActiviteImageMeta(int $id, string $titre, int $ordre, bool $visib
     $ordre = max(0, min(9999, $ordre));
     $description = appCleanText($description, 5000);
 
-    $connect = getConnection();
-    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
     if (!$repository->ensureSessionColumn() || !$repository->existsInSession($id, getActiveAdminSessionId())) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
@@ -306,8 +302,7 @@ function replaceActiviteImageFile(int $id, string $tmpPath, string $mimeType, ?s
     $storedPath = 'activites/' . $newFilename;
 
     try {
-        $connect = getConnection();
-        $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+        $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
         $repository->ensureSessionColumn();
         if (!$repository->replaceImagePath($id, getActiveAdminSessionId(), $storedPath)) {
             @unlink($newPath);
@@ -334,8 +329,7 @@ function deleteActiviteImage(int $id): array
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
 
-    $connect = getConnection();
-    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
     if (!$repository->ensureSessionColumn()) {
         return ['success' => false, 'message' => 'Image introuvable.'];
     }
@@ -368,8 +362,7 @@ function resolveActiviteImagePath(string $storedPath): string
 
 function getActiviteImageById(int $id, ?PDO $connect = null): array
 {
-    $connect = $connect ?: getConnection();
-    $repository = new \Patro\Domain\Activite\Repository\ActiviteImageRepository($connect);
+    $repository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
     $repository->ensureSessionColumn();
 
     return $repository->findByIdAndSession($id, getActiveAdminSessionId()) ?? [];

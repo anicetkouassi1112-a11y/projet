@@ -9,10 +9,9 @@ $animateur = currentAnimateur();
 $sectionName = (string) ($animateur['nom_section'] ?? 'Section');
 $idSection = (int) ($animateur['id_section'] ?? 0);
 
-$genreSection = strtolower(trim((string) (appContainer()
-    ->get(\Patro\Domain\Inscription\Repository\SectionRepository::class)
-    ->findGenreById($idSection) ?? '')));
-$typesJeux = appContainer()->get(\Patro\Domain\Jeu\Repository\JeuRepository::class)->types();
+$catalog = appContainer()->get(\Patro\Application\Animateur\AnimateurGameCatalog::class)->execute($idSection);
+$genreSection = $catalog['genre'];
+$typesJeux = $catalog['types'];
 
 // 3. Titre de l'onglet dynamique selon le genre
 $pageTitle = ($genreSection === 'fille') 
