@@ -136,7 +136,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                     <span><?= e($totalTeeShirts) ?> tee-shirts</span>
                 </div>
                 <div class="stats-size-grid">
-                    <?php foreach (validTeeShirtSizes() as $size): ?>
+                    <?php foreach (\Patro\Domain\Inscription\TeeShirtSize::values() as $size): ?>
                         <?php
                         $key = 'taille_' . strtolower($size);
                         $sizeTotal = (int) ($teeShirtStats[$key] ?? 0);

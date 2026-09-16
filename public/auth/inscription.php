@@ -175,7 +175,7 @@ $assetBase = app_url('Backend/Assets');
                 <fieldset class="amount-section tshirt-section" id="tshirtSection" aria-hidden="true">
                     <legend><i class="bi bi-t-shirt me-2"></i>Taille du tee-shirt</legend>
                     <div class="amount-options tshirt-options">
-                        <?php foreach (validTeeShirtSizes() as $size): ?>
+                        <?php foreach (\Patro\Domain\Inscription\TeeShirtSize::values() as $size): ?>
                         <label class="amount-option" for="taille<?= e($size) ?>">
                             <input type="radio" id="taille<?= e($size) ?>" name="taille_tee_shirt" value="<?= e($size) ?>" <?= $tailleTeeShirt === $size ? 'checked' : '' ?>>
                             <span><?= e($size) ?></span>

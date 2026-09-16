@@ -53,7 +53,7 @@ $modalCandidates = array_map(static function (array $candidate) use ($showSectio
                                     <label for="modal_taille_tee_shirt" class="jeu-field-label">Taille <span class="jeu-required">*</span></label>
                                     <select class="form-control jeu-input" name="taille_tee_shirt" id="modal_taille_tee_shirt" required>
                                         <option value="">Choisir</option>
-                                        <?php foreach (validTeeShirtSizes() as $size): ?>
+                                        <?php foreach (\Patro\Domain\Inscription\TeeShirtSize::values() as $size): ?>
                                             <option value="<?= e($size) ?>"><?= e($size) ?></option>
                                         <?php endforeach; ?>
                                     </select>

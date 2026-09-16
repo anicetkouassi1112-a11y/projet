@@ -598,17 +598,6 @@ function photoRequired(): bool
     return false;
 }
 
-function validTeeShirtSizes(): array
-{
-    return ['S', 'M', 'L', 'XL', 'XXL'];
-}
-
-function normalizeTeeShirtSize(?string $size): string
-{
-    $size = strtoupper(trim((string) $size));
-    return in_array($size, validTeeShirtSizes(), true) ? $size : '';
-}
-
 // ===== CONFIGURATIONS GLOBALES =====
 function formatFcfa(int $amount): string
 {
