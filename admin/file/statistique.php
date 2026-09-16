@@ -6,7 +6,7 @@ requireRole(['directeur'], '../Auth/login.php');
 
 $anneeActive = displayYearFromRequest((int) date('Y'));
 $typeSessionActive = displaySessionTypeFromRequest(appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
-$anneeId = selectedYearId($anneeActive);
+$anneeId = appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
 $searchQuery = trim((string) ($_GET['search'] ?? ''));
 $sectionStats = [];
 $showSectionBreakdown = sectionBreakdownEnabled($typeSessionActive);

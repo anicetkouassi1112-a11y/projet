@@ -30,7 +30,7 @@ if ($genreFilterKey !== '') {
 }
 
 try {
-    $anneeId = selectedYearId($anneeActive);
+    $anneeId = appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
     $teeShirtRegistrations = appContainer()
         ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
         ->findPaidTeeShirts($anneeId, $typeSessionActive, $genreFilter, $searchQuery);

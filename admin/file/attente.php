@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== '') {
 // --- Chargement de la liste ---
 $inscriptions = [];
 try {
-    $anneeId = selectedYearId($anneeActive);
+    $anneeId = appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
     $inscriptions = appContainer()
         ->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
         ->findPending($anneeId, $typeSessionActive, $searchQuery);

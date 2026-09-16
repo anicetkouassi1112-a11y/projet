@@ -10,7 +10,7 @@ function backupDirectory(): string
 function createDatabaseBackup(int $annee, string $typeSession): array
 {
     $typeSession = normalizeSessionType($typeSession);
-    $anneeId = selectedYearId($annee);
+    $anneeId = appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($annee);
     $inscrits = appContainer()
         ->get(\Patro\Domain\Inscription\Repository\BackupRepository::class)
         ->findForSession($anneeId, $typeSession);

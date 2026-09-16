@@ -51,11 +51,6 @@ function displayFlashMessage(): void
     }
 }
 
-function selectedYearId(int $anneeActive): int
-{
-    return appContainer()->get(\Patro\Inscription\SessionService::class)->ensureAnnee($anneeActive);
-}
-
 function activeYearFromRequest(): int
 {
     return \Patro\Http\RequestHelper::activeYearFromRequest();

@@ -95,7 +95,7 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(BackupRepository::class, static fn (Container $container): BackupRepository => new BackupRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
     $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
-    $container->singleton(ActiviteImageStorage::class, static fn (): ActiviteImageStorage => new ActiviteImageStorage(dirname(__DIR__)));
+    $container->singleton(ActiviteImageStorage::class, static fn (): ActiviteImageStorage => new ActiviteImageStorage(dirname(__DIR__, 2)));
     $container->singleton(ActiviteImageService::class, static fn (Container $container): ActiviteImageService => new ActiviteImageService(
         $container->get(ActiviteImageRepository::class),
         $container->get(SessionService::class),
