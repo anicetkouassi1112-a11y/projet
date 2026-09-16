@@ -122,7 +122,7 @@ $assetBase = '../../Backend/Assets';
     <main class="home-main">
         <div class="page-header">
             <h1>Gestion des animateurs</h1>
-            <p><?= e($anneeActive) ?> - Session <?= e(sessionTypeLabel($typeSessionActive)) ?></p>
+            <p><?= e($anneeActive) ?> - Session <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label()) ?></p>
         </div>
 
         <?php if ($message !== ''): ?>
@@ -141,7 +141,7 @@ $assetBase = '../../Backend/Assets';
                         <label for="id_session">Session</label>
                         <input type="hidden" name="id_session" value="<?= e($currentSessionId) ?>">
                         <input type="text" class="form-control"
-                               value="Session <?= e(sessionTypeLabel($typeSessionActive)) ?> <?= e($anneeActive) ?>"
+                               value="Session <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label()) ?> <?= e($anneeActive) ?>"
                                disabled readonly>
                     </div>
                     <div class="col-md-3">

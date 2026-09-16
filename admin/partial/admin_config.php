@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $configuration->set('inscription_type_session', $typeSession);
                 $_SESSION['type_session_active'] = $typeSession;
-                $message = 'Type de session actif mis a jour: ' . sessionTypeLabel($typeSession) . '.';
+                $message = 'Type de session actif mis a jour: ' . \Patro\Domain\Inscription\SessionType::normalize($typeSession)->label() . '.';
             }
         } elseif ($action === 'update_registration_prices') {
             $montantInscription = filter_var($_POST['montant_inscription'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -141,7 +141,7 @@ $assetBase = '../../Backend/Assets';
                             <select class="form-control" name="type_session" id="type_session">
                                 <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                                     <option value="<?= e($typeSession) ?>" <?= $typeSession === $typeSessionActuel ? 'selected' : '' ?>>
-                                        <?= e(sessionTypeLabel($typeSession)) ?>
+                                        <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSession)->label()) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -187,7 +187,7 @@ $assetBase = '../../Backend/Assets';
                         <button type="submit" class="btn btn-primary" style="margin-top: 12px;">Enregistrer</button>
                     </form>
                     <p class="text-muted" style="margin-top: 10px;">
-                        Montant avec tee-shirt: <?= e(formatFcfa($montantInscriptionActuel + $prixTeeShirtActuel)) ?>
+                        Montant avec tee-shirt: <?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantInscriptionActuel + $prixTeeShirtActuel)) ?>
                     </p>
                 </div>
             </div>
@@ -224,7 +224,7 @@ $assetBase = '../../Backend/Assets';
                             <select class="form-control" name="type_session" id="backup_type_session" required>
                                 <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                                     <option value="<?= e($typeSession) ?>" <?= $typeSession === $typeSessionActuel ? 'selected' : '' ?>>
-                                        <?= e(sessionTypeLabel($typeSession)) ?>
+                                        <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSession)->label()) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

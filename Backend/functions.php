@@ -577,18 +577,6 @@ function getFlashMessages(): array
     return is_array($messages) ? $messages : [];
 }
 
-// ===== CONFIGURATIONS GLOBALES =====
-function formatFcfa(int $amount): string
-{
-    return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
-}
-
-function sessionTypeLabel(?string $type): string
-{
-    return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
-}
-
-
 function canAccessPublicInscrit(int $idInscrit): bool
 {
     if (!empty($_SESSION['adpro'])) {

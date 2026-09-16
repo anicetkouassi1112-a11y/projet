@@ -25,7 +25,7 @@ function createDatabaseBackup(int $annee, string $typeSession): array
             'annee' => $annee,
             'annee_id' => $anneeId,
             'type_session' => $typeSession,
-            'type_session_label' => sessionTypeLabel($typeSession),
+            'type_session_label' => \Patro\Domain\Inscription\SessionType::normalize($typeSession)->label(),
         ],
         'counts' => [
             'inscrits' => count($inscrits),

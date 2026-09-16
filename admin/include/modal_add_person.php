@@ -61,7 +61,7 @@ $modalCandidates = array_map(static function (array $candidate) use ($showSectio
                             </div>
                         </section>
                         <div class="alert alert-warning">
-                            Montant ajoute a l'inscription : <strong><?= e(formatFcfa($teeShirtPrice)) ?></strong>.
+                            Montant ajoute a l'inscription : <strong><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($teeShirtPrice)) ?></strong>.
                         </div>
                     <?php endif; ?>
                 </div>

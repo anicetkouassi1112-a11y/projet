@@ -94,10 +94,10 @@ function safeDisplay($value) {
             </span>
         </td>
     <?php endif; ?>
-    <td class="text-center"><?= safeDisplay(formatFcfa($montant)) ?></td>
+    <td class="text-center">    <?= safeDisplay(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montant)) ?></td>
     <td class="text-center">
         <?php if ($prixTee > 0): ?>
-            <?= safeDisplay(formatFcfa($prixTee)) ?>
+            <?= safeDisplay(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($prixTee)) ?>
             <?php if (!empty($tailleTee)): ?>
                 <small class="text-muted">(<?= safeDisplay($tailleTee) ?>)</small>
             <?php endif; ?>

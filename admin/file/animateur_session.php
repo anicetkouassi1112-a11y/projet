@@ -132,7 +132,7 @@ function lienTri(string $cle, string $label, string $sortKeyActuel, int $filterS
         <div class="page-header d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <h1>Attribution des sections animateurs</h1>
-                <p class="mb-0"><?= e($anneeActive) ?> - Session <?= e(sessionTypeLabel($typeSessionActive)) ?></p>
+                <p class="mb-0"><?= e($anneeActive) ?> - Session <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label()) ?></p>
             </div>
         </div>
 

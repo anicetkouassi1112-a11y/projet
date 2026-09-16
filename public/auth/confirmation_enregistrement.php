@@ -76,21 +76,21 @@ $assetBase = app_url('Backend/Assets');
             </div>
             <div>
                 <dt>Session</dt>
-                <dd><?= e(sessionTypeLabel($inscrit['type_session'] ?? null)) ?></dd>
+                <dd><?= e(\Patro\Domain\Inscription\SessionType::normalize($inscrit['type_session'] ?? null)->label()) ?></dd>
             </div>
             <div>
                 <dt>Montant inscription</dt>
-                <dd><?= e(formatFcfa($montantInscription)) ?></dd>
+                <dd><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantInscription)) ?></dd>
             </div>
             <?php if ($prixTeeShirt > 0): ?>
             <div>
                 <dt>Tee-shirt</dt>
-                <dd><?= e(formatFcfa($prixTeeShirt)) ?> - Taille <?= e((string) ($inscrit['taille_tee_shirt'] ?? '')) ?></dd>
+                <dd><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($prixTeeShirt)) ?> - Taille <?= e((string) ($inscrit['taille_tee_shirt'] ?? '')) ?></dd>
             </div>
             <?php endif; ?>
             <div>
                 <dt>Total</dt>
-                <dd><?= e(formatFcfa($montantTotal)) ?></dd>
+                <dd><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantTotal)) ?></dd>
             </div>
             <div>
                 <dt>Référence</dt>

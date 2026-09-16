@@ -51,7 +51,7 @@ function genderPageContext(string $genderKey, int $anneeActive, ?string $typeSes
     $showSectionBreakdown = appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSession);
     if (!$showSectionBreakdown) $pageKey = null;
 
-    $sessionLabel = sessionTypeLabel($typeSession);
+    $sessionLabel = \Patro\Domain\Inscription\SessionType::normalize($typeSession)->label();
     $idSession = appContainer()->get(\Patro\Inscription\SessionService::class)
         ->ensureSession($anneeActive, $typeSession);
     $isScolaire = ($typeSession === 'scolaire');
@@ -148,7 +148,7 @@ function genderAnimateurPageContext(string $genderKey, int $anneeActive, ?string
         $pageKey = null;
     }
 
-    $sessionLabel = sessionTypeLabel($typeSession);
+    $sessionLabel = \Patro\Domain\Inscription\SessionType::normalize($typeSession)->label();
     $idSession = appContainer()->get(\Patro\Inscription\SessionService::class)
         ->ensureSession($anneeActive, $typeSession);
     $isScolaire = ($typeSession === 'scolaire');

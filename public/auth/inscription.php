@@ -96,7 +96,7 @@ $assetBase = app_url('Backend/Assets');
     <main class="login-card">
         <div class="registration-header">
             <h1>Inscription</h1>
-            <p class="step-subtitle">Session <?= e(sessionTypeLabel($typeSessionActuel)) ?></p>
+            <p class="step-subtitle">Session <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSessionActuel)->label()) ?></p>
         </div>
 
         <?php if (!$inscriptionsOuvertes): ?>
@@ -158,15 +158,15 @@ $assetBase = app_url('Backend/Assets');
                         <label class="amount-option" for="prix0">
                             <input type="radio" id="prix0" name="prix" value="<?= e($montantBase) ?>" <?= $prix === (string) $montantBase ? 'checked' : '' ?> required>
                             <span>
-                                <strong><?= e(formatFcfa($montantBase)) ?></strong>
+                                <strong><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantBase)) ?></strong>
                                 <small>Inscription seule</small>
                             </span>
                         </label>
                         <label class="amount-option" for="prix1">
                             <input type="radio" id="prix1" name="prix" value="<?= e($montantAvecTeeShirt) ?>" <?= $prix === (string) $montantAvecTeeShirt ? 'checked' : '' ?> required>
                             <span>
-                                <strong><?= e(formatFcfa($montantAvecTeeShirt)) ?></strong>
-                                <small>Inscription + tee-shirt (<?= e(formatFcfa($prixTeeShirt)) ?>)</small>
+                                <strong><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantAvecTeeShirt)) ?></strong>
+                                <small>Inscription + tee-shirt (<?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($prixTeeShirt)) ?>)</small>
                             </span>
                         </label>
                     </div>

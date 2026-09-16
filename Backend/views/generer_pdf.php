@@ -46,13 +46,13 @@ $rows = [
     'Section' => (string) ($inscrit['section'] ?? ''),
     'Telephone' => (string) ($inscrit['tel'] ?? ''),
     'Adresse' => (string) ($inscrit['adresse'] ?? ''),
-    'Montant inscription' => formatFcfa($montantInscription),
+    'Montant inscription' => \Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantInscription),
     'Tee-shirt' => $prixTeeShirt > 0
-        ? formatFcfa($prixTeeShirt) . ' - Taille ' . (string) ($inscrit['taille_tee_shirt'] ?? '')
+        ? \Patro\Presentation\Formatter\MoneyFormatter::fcfa($prixTeeShirt) . ' - Taille ' . (string) ($inscrit['taille_tee_shirt'] ?? '')
         : 'Non',
-    'Total a regler' => formatFcfa($montantTotal),
+    'Total a regler' => \Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantTotal),
     'Annee' => (string) ($inscrit['annee'] ?? ''),
-    'Session' => sessionTypeLabel($inscrit['type_session'] ?? null),
+    'Session' => \Patro\Domain\Inscription\SessionType::normalize($inscrit['type_session'] ?? null)->label(),
     'Statut' => $statusText,
 ];
 

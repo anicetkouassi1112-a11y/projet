@@ -38,7 +38,7 @@ $icons = ['bi-stars-fill', 'bi-lightning-fill', 'bi-shield-check', 'bi-trophy-fi
 $toneIndex = 0;
 ?>
 <div class="page-header mb-4">
-    <h1>Quelques activités menées au cours de <span>PATRO </span><?= e(sessionTypeLabel($typeSessionActuel)) ?></h1>
+    <h1>Quelques activités menées au cours de <span>PATRO </span><?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSessionActuel)->label()) ?></h1>
     <p class="lead text-muted">Chaque section correspond à une tranche d'âge et un programme adapté.</p>
 </div>
 

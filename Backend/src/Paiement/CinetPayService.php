@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Patro\Paiement;
 
 use Patro\Config\Environment;
+use Patro\Domain\Inscription\SessionType;
 use Patro\Domain\Inscription\Repository\InscriptionRepository;
 use Patro\Domain\Paiement\Repository\CinetPayTransactionRepository;
+use Patro\Presentation\Formatter\MoneyFormatter;
 use PDOException;
 
 /**
@@ -365,21 +367,10 @@ class CinetPayService
             'customer_phone_number' => (string) ($inscrit['tel'] ?? ''),
             'invoice_data' => [
                 'Reference' => !empty($inscrit['identifiant']) ? (string) $inscrit['identifiant'] : 'PATRO-' . $idInscrit,
-                'Session' => $this->sessionTypeLabel($inscrit['type_session'] ?? null),
-                'Total' => $this->formatFcfa($amount),
+                'Session' => SessionType::normalize($inscrit['type_session'] ?? null)->label(),
+                'Total' => MoneyFormatter::fcfa($amount),
             ],
         ];
-    }
-
-    private function sessionTypeLabel(?string $type): string
-    {
-        $type = strtolower(trim((string) $type));
-        return $type === 'vacance' ? 'Vacance' : 'Scolaire';
-    }
-
-    private function formatFcfa(int $amount): string
-    {
-        return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
     }
 
 }

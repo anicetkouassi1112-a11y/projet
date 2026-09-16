@@ -113,7 +113,7 @@ try {
 }
 
 $anneesDisponibles = appContainer()->get(\Patro\Inscription\SessionService::class)->getDistinctYears();
-$sessionLabel = sessionTypeLabel($typeSessionActive);
+$sessionLabel = \Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label();
 $pageTitle = 'Inscriptions en attente - ' . $anneeActive . ' - ' . $sessionLabel;
 $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
 ?>
@@ -129,7 +129,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                 <?php require __DIR__ . '/../partial/year_navigation.php'; ?>
                 <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                     <a class="btn btn-secondary btn-sm <?= $typeSession === $typeSessionActive ? 'active' : '' ?>" href="<?= lien('attente') ?>?<?= e(http_build_query(['annee' => $anneeActive, 'type_session' => $typeSession, 'search' => $searchQuery])) ?>">
-                        <?= e(sessionTypeLabel($typeSession)) ?>
+                        <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSession)->label()) ?>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -160,7 +160,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                             <td><?= e((string) ($inscription['date_naissance'] ?? '')) ?></td>
                             <td><?= e((string) ($inscription['genre'] ?? '')) ?></td>
                             <td><?= e(\Patro\Domain\Inscription\SectionName::canonical($inscription['nom_section'] ?? null)) ?></td>
-                            <td><?= e(formatFcfa((int) ($inscription['montant_inscription'] ?? 0))) ?></td>
+                            <td><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa((int) ($inscription['montant_inscription'] ?? 0))) ?></td>
                             <td><span class="badge bg-warning"><?= e((string) ($inscription['etat'] ?? '')) ?></span></td>
                             <?php if ($canValidate): ?>
                                 <td>

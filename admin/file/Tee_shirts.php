@@ -65,7 +65,7 @@ if ($showSectionColumn) {
     }
 }
 
-$pageTitle = 'Tee-shirts Payés - ' . $genderLabel . ' - ' . sessionTypeLabel($typeSessionActive);
+$pageTitle = 'Tee-shirts Payés - ' . $genderLabel . ' - ' . \Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label();
 
 // Fonction de nettoyage pour l'affichage
 function safeDisplay($value) {
@@ -88,7 +88,7 @@ function safeDisplay($value) {
 
         <div class="alert alert-success d-flex justify-content-between align-items-center">
             <span><strong>Total des tee-shirts payés :</strong> <?= $totalTeeShirts ?></span>
-            <span><strong>Montant total collecté :</strong> <?= formatFcfa($totalAmount) ?></span>
+            <span><strong>Montant total collecté :</strong> <?= \Patro\Presentation\Formatter\MoneyFormatter::fcfa($totalAmount) ?></span>
         </div>
 
         <div class="table-responsive pending-table-wrap">
@@ -142,7 +142,7 @@ function safeDisplay($value) {
                                         <td><?= e(\Patro\Domain\Inscription\SectionName::canonical($inscrit['section'] ?? null)) ?></td>
                                     <?php endif; ?>
                                     <td><strong><?= e((string) ($inscrit['taille_tee_shirt'] ?? '')) ?></strong></td>
-                                    <td><?= e(formatFcfa((int) ($inscrit['prix_tee_shirt'] ?? 0))) ?></td>
+                                    <td><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa((int) ($inscrit['prix_tee_shirt'] ?? 0))) ?></td>
                                     <td><?= e((string) ($inscrit['tel'] ?? '')) ?></td>
                                 </tr>
                             <?php endforeach; ?>

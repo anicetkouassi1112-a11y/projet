@@ -52,7 +52,7 @@ $fillePercent = (int) round(($totalFille / $genderTotal) * 100);
 $pendingPercent = (int) round(($pendingCount / $totalDossiers) * 100);
 $validatedPercent = (int) round(($nombreTotal / $totalDossiers) * 100);
 $anneesDisponibles = appContainer()->get(\Patro\Inscription\SessionService::class)->getDistinctYears();
-$sessionLabel = sessionTypeLabel($typeSessionActive);
+$sessionLabel = \Patro\Domain\Inscription\SessionType::normalize($typeSessionActive)->label();
 $pageTitle = 'Statistiques - ' . $anneeActive . ' - ' . $sessionLabel;
 $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
 ?>
@@ -73,7 +73,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                 <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                     <a class="btn btn-secondary btn-sm <?= $typeSession === $typeSessionActive ? 'active' : '' ?>"
                     href="<?= e(lien('statistique', ['annee' => $anneeActive, 'type_session' => $typeSession, 'search' => $searchQuery])) ?>">
-                        <?= e(sessionTypeLabel($typeSession)) ?>
+                        <?= e(\Patro\Domain\Inscription\SessionType::normalize($typeSession)->label()) ?>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -84,13 +84,13 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
         <section class="stats-kpi-grid" aria-label="Indicateurs principaux">
             <div class="stats-kpi stats-kpi-primary ">
                 <span>Montant inscriptions</span>
-                <strong><?= e(formatFcfa($totalMontantInscription)) ?></strong>
+                <strong><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($totalMontantInscription)) ?></strong>
                 <small><?= e($nombreTotal) ?> inscrits valides</small>
             </div>
             <div class="stats-kpi stats-kpi-link">
                 <span>Tee-shirts payes</span>
                     <strong><?= e($totalTeeShirts) ?></strong>
-                <small><?= e(formatFcfa($totalVentesTeeShirts)) ?></small>
+                <small><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($totalVentesTeeShirts)) ?></small>
             </div>
             <div class="stats-kpi stats-kpi-link">
                 <span>Inscriptions validees</span>

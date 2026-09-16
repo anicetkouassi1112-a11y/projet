@@ -110,9 +110,9 @@ $disabled = !cinetpayConfigured();
         <dl class="payment-summary">
             <div><dt>Inscrit</dt><dd><?= e($fullName !== '' ? $fullName : '-') ?></dd></div>
             <div><dt>Reference</dt><dd><?= e($reference) ?></dd></div>
-            <div><dt>Inscription</dt><dd><?= e(formatFcfa($montantInscription)) ?></dd></div>
-            <div><dt>Tee-shirt</dt><dd><?= e($prixTeeShirt > 0 ? formatFcfa($prixTeeShirt) : 'Non') ?></dd></div>
-            <div><dt>Total</dt><dd><?= e(formatFcfa($montantTotal)) ?></dd></div>
+            <div><dt>Inscription</dt><dd><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantInscription)) ?></dd></div>
+            <div><dt>Tee-shirt</dt><dd><?= e($prixTeeShirt > 0 ? \Patro\Presentation\Formatter\MoneyFormatter::fcfa($prixTeeShirt) : 'Non') ?></dd></div>
+            <div><dt>Total</dt><dd><?= e(\Patro\Presentation\Formatter\MoneyFormatter::fcfa($montantTotal)) ?></dd></div>
         </dl>
 
         <form method="post" action="cinetpay.php?<?= e(http_build_query(['inscrit_id' => (int) $idInscrit])) ?>">

@@ -151,7 +151,7 @@ $ordresUtilises = array_map(fn($img) => (int) ($img['ordre'] ?? 0), $imagesAccue
                             ?>
                                 <input type="hidden" name="session_id" value="<?= e((int)$activeSession['id_session']) ?>">
                                 <input type="text" class="form-control" 
-                                    value="<?= e(sessionTypeLabel((string)$activeSession['type_session'])) ?>" 
+                                    value="<?= e(\Patro\Domain\Inscription\SessionType::normalize((string)$activeSession['type_session'])->label()) ?>"
                                     disabled readonly>
                             <?php else : ?>
                                 <p class="text-warning">Aucune session active trouvée.</p>
