@@ -146,7 +146,7 @@ if ($age === null) {
 
 $section = appContainer()->get(\Patro\Inscription\SectionService::class)
     ->findMatchingSection(\Patro\Domain\Inscription\Genre::normalize($genre), \Patro\Domain\Inscription\AgeCalculator::calculate($dateNaissance, $annee) ?? -1, $typeSession);
-if ($section === null && sectionBreakdownEnabled($typeSession)) {
+if ($section === null && appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSession)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);
     exit();

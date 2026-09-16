@@ -3,7 +3,7 @@
 $pageName = $GLOBALS['pageName'] ?? $currentPage ?? 'Animateur';
 $anneeActive = $anneeActive ?? date('Y');
 $typeSessionActive = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
-$showSectionBreakdown = sectionBreakdownEnabled($typeSessionActive);
+$showSectionBreakdown = appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSessionActive);
 
 $sectionCounts = $sectionCounts ?? [];
 $sectionTotal = array_sum($sectionCounts);

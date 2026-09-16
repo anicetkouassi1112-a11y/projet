@@ -4,7 +4,7 @@ $baseRedirectParams = is_array($baseRedirectParams ?? null) ? $baseRedirectParam
 $teeShirtPrice = (int) ($teeShirtPrice ?? appContainer()
     ->get(\Patro\Application\Configuration\ConfigurationService::class)
     ->teeShirtPrice());
-$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
+$showSectionColumn = $showSectionColumn ?? appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $modalAction = 'Tee_shirts.php';
 if ($baseRedirectParams) {
     $modalAction .= '?' . http_build_query($baseRedirectParams);

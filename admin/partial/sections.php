@@ -48,7 +48,7 @@ function genderPageContext(string $genderKey, int $anneeActive, ?string $typeSes
     $pageKey = normalizeSectionPage($_GET['section'] ?? null, $config);
     $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($typeSession, appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
     
-    $showSectionBreakdown = sectionBreakdownEnabled($typeSession);
+    $showSectionBreakdown = appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSession);
     if (!$showSectionBreakdown) $pageKey = null;
 
     $sessionLabel = sessionTypeLabel($typeSession);
@@ -143,7 +143,7 @@ function genderAnimateurPageContext(string $genderKey, int $anneeActive, ?string
     $pageKey = normalizeSectionPage($_GET['section'] ?? null, $config);
     $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($typeSession, appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 
-    $showSectionBreakdown = sectionBreakdownEnabled($typeSession);
+    $showSectionBreakdown = appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSession);
     if (!$showSectionBreakdown) {
         $pageKey = null;
     }

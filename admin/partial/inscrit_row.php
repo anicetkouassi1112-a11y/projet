@@ -31,7 +31,7 @@ if (!empty($dateNaissance)) {
 // Droits et affichage de la colonne section
 $canManageInscrits = $canManageInscrits ?? adminHasRole(['directeur']);
 $typeSessionActive = $typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
-$showSectionColumn = $showSectionColumn ?? sectionBreakdownEnabled($typeSessionActive);
+$showSectionColumn = $showSectionColumn ?? appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSessionActive);
 
 // Numéro de ligne
 static $rowNumber = 0;

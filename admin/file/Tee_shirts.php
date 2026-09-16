@@ -18,7 +18,7 @@ $genreFilter = match ($genreFilterKey) {
 $teeShirtRegistrations = [];
 $message = '';
 $genderLabel = $genreFilter === '' ? 'Tous les genres' : ($genreFilter === \Patro\Domain\Inscription\Genre::FILLE->value ? 'Filles' : 'Garçons');
-$showSectionColumn = sectionBreakdownEnabled($typeSessionActive);
+$showSectionColumn = appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSessionActive);
 
 $baseRedirectParams = [
     'annee' => $anneeActive,

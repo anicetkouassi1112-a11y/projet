@@ -598,14 +598,6 @@ function sessionTypeLabel(?string $type): string
     return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
 }
 
-function sectionBreakdownEnabled(?string $typeSession = null): bool
-{
-    return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType(
-        $typeSession,
-        appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()
-    ) !== 'scolaire';
-}
-
 
 function canAccessPublicInscrit(int $idInscrit): bool
 {

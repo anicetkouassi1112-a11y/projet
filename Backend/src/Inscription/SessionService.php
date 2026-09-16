@@ -146,4 +146,10 @@ class SessionService
         return $this->normalizeSessionType($configValue);
     }
 
+    public function sectionBreakdownEnabled(?string $typeSession = null): bool
+    {
+        $type = $this->normalizeSessionType($typeSession, $this->getCurrentSessionType());
+        return $type === SessionType::VACANCE->value;
+    }
+
 }

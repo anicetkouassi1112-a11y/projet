@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $typeSessionActuel,
                 $montantBase,
                 $prixTeeShirt,
-                sectionBreakdownEnabled($typeSessionActuel),
+                appContainer()->get(\Patro\Inscription\SessionService::class)->sectionBreakdownEnabled($typeSessionActuel),
                 app_int('IDENTIFIANT_ORDER_DIGITS', 3)
             );
             $result = appContainer()->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute($command);
