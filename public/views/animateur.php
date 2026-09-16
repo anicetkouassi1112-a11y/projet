@@ -3,9 +3,16 @@
  * Espace animateur — Accueil et catégories de jeux (Types de jeux).
  */
 require_once __DIR__ . '/../../Backend/utilitaire.php';
-requireAnimateur();
-
-$animateur = currentAnimateur();
+$authorization = appContainer()->get(\Patro\Application\Animateur\AnimateurAuthorizationService::class);
+if (!$authorization->isAuthenticated()) {
+    redirectTo(app_url('public/auth/connexion.php'));
+}
+if ($authorization->isBlocked()) {
+    $authorization->logout();
+    appContainer()->get(\Patro\Http\SessionManager::class)->flash('danger', 'Votre compte animateur est bloqué.');
+    redirectTo(app_url('public/auth/connexion.php'));
+}
+$animateur = $authorization->current();
 $sectionName = (string) ($animateur['nom_section'] ?? 'Section');
 $idSection = (int) ($animateur['id_section'] ?? 0);
 

@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/functions.php';
-require_once __DIR__ . '/site.php';
 
 // ============================================================
 //  utilitaire.php - Fonctions métier de l'application

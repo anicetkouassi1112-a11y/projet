@@ -3,9 +3,16 @@
  * Fiche détaillée d'un jeu spécifique.
  */
 require_once __DIR__ . '/../../Backend/utilitaire.php';
-requireAnimateur();
-
-$animateur = currentAnimateur();
+$authorization = appContainer()->get(\Patro\Application\Animateur\AnimateurAuthorizationService::class);
+if (!$authorization->isAuthenticated()) {
+    redirectTo(app_url('public/auth/connexion.php'));
+}
+if ($authorization->isBlocked()) {
+    $authorization->logout();
+    appContainer()->get(\Patro\Http\SessionManager::class)->flash('danger', 'Votre compte animateur est bloqué.');
+    redirectTo(app_url('public/auth/connexion.php'));
+}
+$animateur = $authorization->current();
 $idSection = (int) ($animateur['id_section'] ?? 0);
 $sectionName = (string) ($animateur['nom_section'] ?? 'Section');
 
