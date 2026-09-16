@@ -127,7 +127,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
             <div class="breadcrumb-buttons">
                 <?php $yearRoute = lien('attente'); ?>
                 <?php require __DIR__ . '/../partial/year_navigation.php'; ?>
-                <?php foreach (validSessionTypes() as $typeSession): ?>
+                <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                     <a class="btn btn-secondary btn-sm <?= $typeSession === $typeSessionActive ? 'active' : '' ?>" href="<?= lien('attente') ?>?<?= e(http_build_query(['annee' => $anneeActive, 'type_session' => $typeSession, 'search' => $searchQuery])) ?>">
                         <?= e(sessionTypeLabel($typeSession)) ?>
                     </a>

@@ -70,7 +70,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                     $yearQueryParams = ['page' => 'statistique'];
                 ?>
                 <?php require __DIR__ . '/../partial/year_navigation.php'; ?>
-                <?php foreach (validSessionTypes() as $typeSession): ?>
+                <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                     <a class="btn btn-secondary btn-sm <?= $typeSession === $typeSessionActive ? 'active' : '' ?>"
                     href="<?= e(lien('statistique', ['annee' => $anneeActive, 'type_session' => $typeSession, 'search' => $searchQuery])) ?>">
                         <?= e(sessionTypeLabel($typeSession)) ?>

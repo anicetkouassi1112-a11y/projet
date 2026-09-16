@@ -139,7 +139,7 @@ $assetBase = '../../Backend/Assets';
                         <div class="form-group mr-3">
                             <label for="type_session" class="mr-2">Session</label>
                             <select class="form-control" name="type_session" id="type_session">
-                                <?php foreach (validSessionTypes() as $typeSession): ?>
+                                <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                                     <option value="<?= e($typeSession) ?>" <?= $typeSession === $typeSessionActuel ? 'selected' : '' ?>>
                                         <?= e(sessionTypeLabel($typeSession)) ?>
                                     </option>
@@ -222,7 +222,7 @@ $assetBase = '../../Backend/Assets';
                         <div class="form-group mr-3">
                             <label for="backup_type_session" class="mr-2">Session</label>
                             <select class="form-control" name="type_session" id="backup_type_session" required>
-                                <?php foreach (validSessionTypes() as $typeSession): ?>
+                                <?php foreach (\Patro\Domain\Inscription\SessionType::values() as $typeSession): ?>
                                     <option value="<?= e($typeSession) ?>" <?= $typeSession === $typeSessionActuel ? 'selected' : '' ?>>
                                         <?= e(sessionTypeLabel($typeSession)) ?>
                                     </option>

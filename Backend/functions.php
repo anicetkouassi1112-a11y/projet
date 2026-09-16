@@ -642,11 +642,6 @@ function formatFcfa(int $amount): string
     return number_format(max(0, $amount), 0, ',', ' ') . ' FCFA';
 }
 
-function validSessionTypes(): array
-{
-    return ['scolaire', 'vacance'];
-}
-
 function sessionTypeLabel(?string $type): string
 {
     return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
