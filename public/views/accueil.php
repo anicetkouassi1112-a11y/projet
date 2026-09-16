@@ -20,26 +20,16 @@ if (!is_array($activiteImages)) {
     $activiteImages = [];
 }
 
-// Fonction utilitaire (définie dans functions.php, mais on la rappelle ici si besoin)
-if (!function_exists('getActiviteImageByOrder')) {
-    /**
-     * @param int $ordre
-     * @param array $images
-     * @param string $fallback
-     * @return string
-     */
-    function getActiviteImageByOrder($ordre, $images, $fallback = '') {
-        foreach ($images as $image) {
-            if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-                return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
-            }
-        }
-        return $fallback;
+$heroImage = rtrim($assetBase, '/') . '/img/friend.png';
+$placeImage = rtrim($assetBase, '/') . '/img/office-man.png';
+foreach ($activiteImages as $image) {
+    if ((int) ($image['ordre'] ?? -1) === 0 && !empty($image['id'])) {
+        $heroImage = app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
+    }
+    if ((int) ($image['ordre'] ?? -1) === 1 && !empty($image['id'])) {
+        $placeImage = app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
     }
 }
-
-$heroImage = getActiviteImageByOrder(0, $activiteImages, rtrim($assetBase, '/') . '/img/friend.png');
-$placeImage = getActiviteImageByOrder(1, $activiteImages, rtrim($assetBase, '/') . '/img/office-man.png');
 
 // Filtrer les images pour les activités (ordre >= 1)
 $activityImages = array_filter($activiteImages, function($img) {

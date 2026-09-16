@@ -778,62 +778,7 @@ function genreCodeForIdentifier(string $genre): string
     throw new InvalidArgumentException('Genre invalide pour la generation de l identifiant.');
 }
 
-/**
- * Genere l'identifiant metier SECTION-GENRE-ORDRE avec un compteur SQL verrouille.
- * Cette fonction doit etre appelee dans une transaction ouverte.
- */
-/**
- * Valide les donnees, genere l'identifiant metier et insere l'inscrit en une transaction PDO.
- */
-function enregistrerInscrit(
-    string $nom,
-    string $prenom,
-    string $dateNaissance,
-    string $genre,
-    string $tel,
-    string $adresse,
-    string $prixChoisi = '',
-    string $tailleTeeShirt = '',
-    ?int $annee = null
-): array {
-    requireCsrfToken();
-    $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType();
-
-    return appContainer()->get(\Patro\Application\Inscription\EnregistrerInscrit::class)->execute(
-        new \Patro\Application\Inscription\EnregistrerInscritCommand(
-            $nom, $prenom, $dateNaissance, $genre, $tel, $adresse, $prixChoisi,
-            $tailleTeeShirt, $annee ?: (int) date('Y'), $typeSession,
-            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->registrationAmount(),
-            appContainer()->get(\Patro\Application\Configuration\ConfigurationService::class)->teeShirtPrice(),
-            sectionBreakdownEnabled($typeSession),
-            app_int('IDENTIFIANT_ORDER_DIGITS', 3)
-        )
-    );
-}
 function nextRegistrationStepUrl(int $idInscrit): string
 {
     return app_url('public/auth/confirmation_enregistrement.php') . '?' . http_build_query(['inscrit_id' => $idInscrit]);
-}
-
-/**
- * Retourne l'ID de la session active pour l'administration.
- * La session active est définie par : année courante + type_session issu de la config.
- * Toute modification ne doit s'appliquer qu'à cette session.
- */
-
-/**
- * Récupère l'URL d'une image d'activité en fonction de son ordre.
- * @param int $ordre  L'ordre recherché.
- * @param array $images  Le tableau d'images (déjà trié par ordre).
- * @param string $fallback  URL de secours si aucune image ne correspond.
- * @return string URL de l'image.
- */
-function getActiviteImageByOrder(int $ordre, array $images, string $fallback = ''): string
-{
-    foreach ($images as $image) {
-        if ((int) ($image['ordre'] ?? -1) === $ordre && !empty($image['id'])) {
-            return app_url('public/media/activite.php') . '?' . http_build_query(['id' => (int) $image['id']]);
-        }
-    }
-    return $fallback;
 }
