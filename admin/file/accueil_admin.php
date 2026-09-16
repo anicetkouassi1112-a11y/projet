@@ -4,6 +4,11 @@ require_once __DIR__ . '/../../Backend/utilitaire.php';
 
 requireRole(['directeur'], '../Auth/login.php');
 $activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+$activiteImageService = appContainer()->get(\Patro\Application\Activite\ActiviteImageService::class);
+$activiteRepository->ensureSessionColumn();
+$allImages = $activiteRepository->findAllBySession(
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+);
 
 $currentSessionId = appContainer()->get(\Patro\Inscription\SessionService::class)
     ->ensureSession($anneeActive, $typeSessionActive);
@@ -53,8 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ordre = $ordre === false ? 0 : max(0, min(5, (int) $ordre));
         $visible = isset($_POST['visible']) && $_POST['visible'] === '1';
 
-        $activiteRepository->ensureSessionColumn();
-        $allImages = $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
         $imagesExistantes = array_filter($allImages, fn($img) => (int) ($img['ordre'] ?? -1) >= 0 && (int) ($img['ordre'] ?? -1) <= 5);
 
         $ordreDejaPris = array_filter($imagesExistantes, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
@@ -64,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($ordreDejaPris !== []) {
             setFlashMessage('warning', 'L\'ordre ' . $ordre . ' est déjà utilisé par une autre image. Choisissez un ordre libre.');
         } else {
-            $result = saveActiviteImageUpload($_FILES['image'] ?? [], $titre, $ordre, $visible);
+            $result = $activiteImageService->add($_FILES['image'] ?? [], $titre, $ordre, $visible);
             setFlashMessage($result['success'] ? 'success' : 'danger', (string) ($result['message'] ?? ''));
         }
     } elseif ($action === 'update_image') {
@@ -81,19 +84,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($ordreDejaPris !== []) {
             setFlashMessage('warning', 'L\'ordre ' . $ordre . ' est déjà utilisé par une autre image. Choisissez un ordre libre.');
         } else {
-            $result = updateActiviteImageMeta((int) $id, $titre, $ordre, $visible);
+            $result = $activiteImageService->updateMeta((int) $id, $titre, $ordre, $visible);
             setFlashMessage($result['success'] ? 'success' : 'danger', (string) ($result['message'] ?? ''));
         }
     } elseif ($action === 'delete_image') {
         $id = filter_var($_POST['id'] ?? null, FILTER_VALIDATE_INT);
-        $result = deleteActiviteImage((int) $id);
+        $result = $activiteImageService->delete((int) $id);
         setFlashMessage($result['success'] ? 'success' : 'danger', (string) ($result['message'] ?? ''));
     }
 
     redirectTo(lien('accueil_admin'));
 }
 
-$activiteRepository->ensureSessionColumn();
 $images = $activiteRepository->findAllBySession(
     appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
 );

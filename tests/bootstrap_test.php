@@ -19,6 +19,8 @@ $requiredServices = [
     Patro\Domain\Inscription\Repository\ThemeRepository::class,
     Patro\Domain\Configuration\Repository\ConfigurationRepository::class,
     Patro\Application\Configuration\ConfigurationService::class,
+    Patro\Application\Activite\ActiviteImageService::class,
+    Patro\Infrastructure\Storage\ActiviteImageStorage::class,
     Patro\Domain\Admin\Repository\AdminRepository::class,
     Patro\Domain\Animateur\Repository\AnimateurRepository::class,
     Patro\Domain\Statistics\Repository\StatisticsRepository::class,

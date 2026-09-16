@@ -3,6 +3,11 @@
 require_once __DIR__ . '/../../Backend/utilitaire.php';
 requireRole(['directeur'], '../Auth/login.php');
 $activiteRepository = appContainer()->get(\Patro\Domain\Activite\Repository\ActiviteImageRepository::class);
+$activiteImageService = appContainer()->get(\Patro\Application\Activite\ActiviteImageService::class);
+$activiteRepository->ensureSessionColumn();
+$allImages = $activiteRepository->findAllBySession(
+    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
+);
 
 // Fonction utilitaire locale pour les retours d'actions
 function handleActionResult(array $result): void
@@ -27,8 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $visible = isset($_POST['visible']);
             $description = appCleanText((string) ($_POST['description'] ?? ''), 5000);
 
-            $activiteRepository->ensureSessionColumn();
-            $allImages = $activiteRepository->findAllBySession(appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId());
             $activitesExistantes = array_filter($allImages, fn($img) => (int) ($img['ordre'] ?? 0) >= 6);
             $ordreDejaPris = array_filter($activitesExistantes, fn($img) => (int) ($img['ordre'] ?? -1) === $ordre);
 
@@ -36,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setFlashMessage('warning', 'L\'ordre ' . $ordre . ' est déjà utilisé par une autre activité. Choisissez un ordre libre.');
             } else {
                 // Assurez-vous que votre fonction backend accepte le paramètre $description
-                $result = saveActiviteImageUpload($_FILES['image'] ?? [], $titre, $ordre, $visible, $description);
+                $result = $activiteImageService->add($_FILES['image'] ?? [], $titre, $ordre, $visible, $description);
                 if (!empty($result['success'])) {
                     actionLog('Activite image added', ['id' => (int) ($result['id'] ?? 0), 'ordre' => $ordre]);
                 }
@@ -68,33 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ---------- Gestion du fichier uploadé ----------
             $fichier = $_FILES['nouvelle_image'] ?? null;
             $fichierValide = true;
-            $cheminAncien = null;
 
             if ($fichier && $fichier['error'] === UPLOAD_ERR_OK) {
-                // Valider le type MIME
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mime = finfo_file($finfo, $fichier['tmp_name']);
-                finfo_close($finfo);
-                $typesAutorises = ['image/jpeg', 'image/png', 'image/webp'];
-                if (!in_array($mime, $typesAutorises, true)) {
-                    setFlashMessage('warning', 'Type de fichier non autorisé. Utilisez JPEG, PNG ou WebP.');
-                    $fichierValide = false;
-                }
-                // Taille maximale configuree via ACTIVITE_MAX_SIZE_MB.
-                $maxUploadBytes = max(1, app_int('ACTIVITE_MAX_SIZE_MB', 5)) * 1024 * 1024;
-                if ($fichier['size'] > $maxUploadBytes) {
-                    setFlashMessage('warning', 'Le fichier dépasse ' . app_int('ACTIVITE_MAX_SIZE_MB', 5) . ' Mo.');
-                    $fichierValide = false;
-                }
-                // Récupérer l'ancien chemin pour suppression ultérieure
-                $activiteRepository->ensureSessionColumn();
-                $oldData = $activiteRepository->findByIdAndSession(
-                    $id,
-                    appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
-                ) ?? [];
-                if ($oldData && !empty($oldData['image_path'])) {
-                    $cheminAncien = resolveActiviteImagePath((string) $oldData['image_path']);
-                }
             } elseif ($fichier && $fichier['error'] !== UPLOAD_ERR_NO_FILE) {
                 setFlashMessage('warning', 'Erreur lors de l\'upload du fichier (code ' . $fichier['error'] . ').');
                 $fichierValide = false;
@@ -103,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Si tout est valide, on procède
             if ($fichierValide) {
                 // 1. Mettre à jour les métadonnées (titre, ordre, visible, description)
-                $resultMeta = updateActiviteImageMeta($id, $titre, $ordre, $visible, $description);
+                $resultMeta = $activiteImageService->updateMeta($id, $titre, $ordre, $visible, $description);
                 if (!$resultMeta['success']) {
                     handleActionResult($resultMeta);
                     break;
@@ -111,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // 2. Si un nouveau fichier a été uploadé, on remplace le fichier physique
                 if ($fichier && $fichier['error'] === UPLOAD_ERR_OK) {
-                    $resultFichier = replaceActiviteImageFile($id, $fichier['tmp_name'], $mime, $cheminAncien);
+                    $resultFichier = $activiteImageService->replace($id, $fichier['tmp_name']);
                     handleActionResult($resultFichier);
                 } else {
                     // Pas de nouveau fichier : on retourne juste le succès des métadonnées
@@ -127,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'delete_image':
             $deleteId = (int) ($_POST['id'] ?? 0);
-            $result = deleteActiviteImage($deleteId);
+            $result = $activiteImageService->delete($deleteId);
             if (!empty($result['success'])) {
                 actionLog('Activite image deleted', ['id' => $deleteId]);
             }
@@ -137,7 +115,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirectTo(lien('activite_admin'));
 }
 
-$activiteRepository->ensureSessionColumn();
 $images = $activiteRepository->findAllBySession(
     appContainer()->get(\Patro\Inscription\SessionService::class)->getActiveAdminSessionId()
 );

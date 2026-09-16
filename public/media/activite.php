@@ -6,7 +6,6 @@
 
 // Charger le bootstrap commun et les helpers de contenu public.
 require_once __DIR__ . '/../../Backend/functions.php';
-require_once __DIR__ . '/../../Backend/site.php';
 
 $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 if (!$id || $id <= 0) {
@@ -31,7 +30,8 @@ if ((int) ($row['visible'] ?? 0) !== 1 && empty($_SESSION['adpro'])) {
     exit;
 }
 
-$filePath = resolveActiviteImagePath((string) ($row['image_path'] ?? ''));
+$filePath = appContainer()->get(\Patro\Application\Activite\ActiviteImageService::class)
+    ->resolvePath((string) ($row['image_path'] ?? ''));
 if ($filePath === '') {
     http_response_code(404);
     exit;

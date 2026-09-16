@@ -18,9 +18,11 @@ use Patro\Domain\Inscription\Repository\ThemeRepository;
 use Patro\Domain\Inscription\Repository\InscriptionRepository;
 use Patro\Domain\Inscription\Repository\BackupRepository;
 use Patro\Infrastructure\Database\PdoConnectionFactory;
+use Patro\Infrastructure\Storage\ActiviteImageStorage;
 use Patro\Infrastructure\Database\PdoTransactionManager;
 use Patro\Application\Inscription\EnregistrerInscrit;
 use Patro\Application\Configuration\ConfigurationService;
+use Patro\Application\Activite\ActiviteImageService;
 use Patro\Application\Inscription\ModifierInscrit;
 use Patro\Application\Animateur\InscrireAnimateurParCode;
 use Patro\Application\Animateur\GenererCodesAnimateur;
@@ -93,6 +95,12 @@ if (!isset($GLOBALS['patro_container']) || !$GLOBALS['patro_container'] instance
     $container->singleton(BackupRepository::class, static fn (Container $container): BackupRepository => new BackupRepository($container->get(PDO::class)));
     $container->singleton(JeuRepository::class, static fn (Container $container): JeuRepository => new JeuRepository($container->get(PDO::class)));
     $container->singleton(ActiviteImageRepository::class, static fn (Container $container): ActiviteImageRepository => new ActiviteImageRepository($container->get(PDO::class)));
+    $container->singleton(ActiviteImageStorage::class, static fn (): ActiviteImageStorage => new ActiviteImageStorage(dirname(__DIR__)));
+    $container->singleton(ActiviteImageService::class, static fn (Container $container): ActiviteImageService => new ActiviteImageService(
+        $container->get(ActiviteImageRepository::class),
+        $container->get(SessionService::class),
+        $container->get(ActiviteImageStorage::class)
+    ));
     $container->singleton(CinetPayTransactionRepository::class, static fn (Container $container): CinetPayTransactionRepository => new CinetPayTransactionRepository($container->get(PDO::class)));
     $container->singleton(EnregistrerInscrit::class, static fn (Container $container): EnregistrerInscrit => new EnregistrerInscrit(
         $container->get(InscriptionRepository::class),
