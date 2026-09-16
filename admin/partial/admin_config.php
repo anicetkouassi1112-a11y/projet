@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $configuration->set('inscription_force_ferme', $forceFerme ? 'on' : 'off');
             $message = $forceFerme ? 'Inscriptions fermees manuellement.' : 'Inscriptions rouvertes manuellement.';
         } elseif ($action === 'update_session_type') {
-            $typeSession = normalizeSessionType($_POST['type_session'] ?? null, '');
+            $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($_POST['type_session'] ?? null, '');
             if ($typeSession === '') {
                 $message = 'Type de session invalide.';
                 $alertType = 'danger';
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'create_backup') {
             $annee = filter_var($_POST['annee'] ?? null, FILTER_VALIDATE_INT);
-            $typeSession = normalizeSessionType($_POST['type_session'] ?? null, '');
+            $typeSession = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($_POST['type_session'] ?? null, '');
 
             if (!$annee || $annee < 2000 || $annee > 2100 || $typeSession === '') {
                 $configPage = 'sauvegarde';

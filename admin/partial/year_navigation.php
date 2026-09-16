@@ -6,7 +6,7 @@
 $yearRoute = $yearRoute ?? basename($_SERVER['PHP_SELF'] ?? 'home.php');
 $searchQuery = $searchQuery ?? '';
 $yearQueryParams = is_array($yearQueryParams ?? null) ? $yearQueryParams : [];
-$typeSessionActive = normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
+$typeSessionActive = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $anneesDisponibles = array_values(array_unique(array_map('intval', $anneesDisponibles ?? [])));
 sort($anneesDisponibles);
 

@@ -647,20 +647,14 @@ function validSessionTypes(): array
     return ['scolaire', 'vacance'];
 }
 
-function normalizeSessionType(?string $type, string $default = 'scolaire'): string
-{
-    $type = strtolower(trim((string) $type));
-    return in_array($type, validSessionTypes(), true) ? $type : $default;
-}
-
 function sessionTypeLabel(?string $type): string
 {
-    return normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
+    return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($type) === 'vacance' ? 'Vacance' : 'Scolaire';
 }
 
 function sectionBreakdownEnabled(?string $typeSession = null): bool
 {
-    return normalizeSessionType(
+    return appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType(
         $typeSession,
         appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType()
     ) !== 'scolaire';

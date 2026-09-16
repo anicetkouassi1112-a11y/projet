@@ -2,7 +2,7 @@
 // Les variables proviennent de home.php ou du contexte de page
 $pageName = $GLOBALS['pageName'] ?? $pageName ?? 'statistique';
 $anneeActive = $anneeActive ?? date('Y');
-$typeSessionActive = normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
+$typeSessionActive = appContainer()->get(\Patro\Inscription\SessionService::class)->normalizeSessionType($typeSessionActive ?? appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType(), appContainer()->get(\Patro\Inscription\SessionService::class)->getCurrentSessionType());
 $showSectionBreakdown = sectionBreakdownEnabled($typeSessionActive);
 
 $sectionCounts = $sectionCounts ?? [];
@@ -15,14 +15,14 @@ $sections = $config['sections'] ?? $sectionConfig['sections'] ?? [];
 $rawSection = trim((string) ($_GET['section'] ?? ''));
 $currentSection = ($rawSection !== '' && ctype_digit($rawSection)) ? $rawSection : null;
 
-// Paramètres de base pour les liens
+// Paramï¿½tres de base pour les liens
 $baseParams = [
     'page' => $pageName,
     'annee' => $anneeActive,
     'type_session' => $typeSessionActive,
 ];
 
-// Route de retour admin sécurisée
+// Route de retour admin sï¿½curisï¿½e
 $adminRoute = function_exists('defaultAdminRoute') 
     ? defaultAdminRoute(currentadminRole()) 
     : defaultadminRoute(currentadminRole());

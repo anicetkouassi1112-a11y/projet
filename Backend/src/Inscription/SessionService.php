@@ -121,6 +121,10 @@ class SessionService
      */
     public function normalizeSessionType(?string $type, string $default = 'scolaire'): string
     {
+        if ($default === '' && SessionType::tryFrom(strtolower(trim((string) $type))) === null) {
+            return '';
+        }
+
         $fallback = SessionType::normalize($default);
         return SessionType::normalize($type, $fallback)->value;
     }
