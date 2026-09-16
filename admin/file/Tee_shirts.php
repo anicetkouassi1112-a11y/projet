@@ -55,7 +55,7 @@ $totalAmount = array_reduce(
 $groupedRegistrations = [];
 if ($showSectionColumn) {
     foreach ($teeShirtRegistrations as $inscrit) {
-        $key = canonicalSectionName($inscrit['section'] ?? null) ?: 'Sans Section';
+        $key = \Patro\Domain\Inscription\SectionName::canonical($inscrit['section'] ?? null) ?: 'Sans Section';
         $groupedRegistrations[$key][] = $inscrit;
     }
 } else {
@@ -139,7 +139,7 @@ function safeDisplay($value) {
                                     <td><?= e((string) ($inscrit['prenom'] ?? '')) ?></td>
                                     <td><?= e((string) ($inscrit['genre'] ?? '')) ?></td>
                                     <?php if ($showSectionColumn): ?>
-                                        <td><?= e(canonicalSectionName($inscrit['section'] ?? null)) ?></td>
+                                        <td><?= e(\Patro\Domain\Inscription\SectionName::canonical($inscrit['section'] ?? null)) ?></td>
                                     <?php endif; ?>
                                     <td><strong><?= e((string) ($inscrit['taille_tee_shirt'] ?? '')) ?></strong></td>
                                     <td><?= e(formatFcfa((int) ($inscrit['prix_tee_shirt'] ?? 0))) ?></td>

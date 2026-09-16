@@ -577,16 +577,6 @@ function getFlashMessages(): array
     return is_array($messages) ? $messages : [];
 }
 
-function photoModuleEnabled(): bool
-{
-    return false;
-}
-
-function photoRequired(): bool
-{
-    return false;
-}
-
 // ===== CONFIGURATIONS GLOBALES =====
 function formatFcfa(int $amount): string
 {
@@ -606,94 +596,6 @@ function canAccessPublicInscrit(int $idInscrit): bool
     }
 
     return isset($_SESSION['last_inscrit_id']) && (int) $_SESSION['last_inscrit_id'] === $idInscrit;
-}
-
-function identifierLookupKey(string $value): string
-{
-    $value = trim($value);
-    $value = function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
-
-    // Vrais caractères UTF-8 (encodage correct)
-    $value = strtr($value, [
-        'à' => 'a', 'â' => 'a', 'ä' => 'a',
-        'ç' => 'c',
-        'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
-        'î' => 'i', 'ï' => 'i',
-        'ô' => 'o', 'ö' => 'o',
-        'ù' => 'u', 'û' => 'u', 'ü' => 'u',
-    ]);
-
-    // Caractères mal encodés (double-encodage UTF-8 corrompu)
-    $value = strtr($value, [
-        'Ã ' => 'a', 'Ã¢' => 'a', 'Ã¤' => 'a',
-        'Ã§' => 'c',
-        'Ã©' => 'e', 'Ã¨' => 'e', 'Ãª' => 'e', 'Ã«' => 'e',
-        'Ã®' => 'i', 'Ã¯' => 'i',
-        'Ã´' => 'o', 'Ã¶' => 'o',
-        'Ã¹' => 'u', 'Ã»' => 'u', 'Ã¼' => 'u',
-    ]);
-
-    return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
-}
-
-function canonicalSectionName(?string $section): string
-{
-    $section = trim((string) $section);
-    if ($section === '') {
-        return 'Non specifie';
-    }
-
-    return match (identifierLookupKey($section)) {
-        'stange' => 'St Ange',
-        'sttharcis' => 'St Tharcis',
-        'stkizito' => 'St Kizito',
-        'stdominique' => 'St Dominique',
-        'stvincent' => 'St Vincent',
-        'stjoseph' => 'St Joseph',
-        'antoinettemeo' => 'Antoinette Méo',
-        'mariagoretti' => 'Maria Goretti',
-        'therese' => 'Thérèse',
-        'bernadette' => 'Bernadette',
-        default => $section,
-    };
-}
-
-function sectionCodeForIdentifier(string $section): string
-{
-    $codes = [
-        'stange' => 'AN',
-        'sttharcis' => 'TH',
-        'stkizito' => 'KI',
-        'stdominique' => 'DO',
-        'stvincent' => 'VI',
-        'stjoseph' => 'JO',
-        'antoinettemeo' => 'AM',
-        'mariagoretti' => 'MG',
-        'therese' => 'TR',
-        'bernadette' => 'BE',
-    ];
-
-    $key = identifierLookupKey($section);
-    if (isset($codes[$key])) {
-        return $codes[$key];
-    }
-
-    $fallback = strtoupper(preg_replace('/[^A-Z0-9]+/', '', strtoupper($section)) ?? '');
-    return substr($fallback !== '' ? $fallback : 'XX', 0, 12);
-}
-
-function genreCodeForIdentifier(string $genre): string
-{
-    $key = identifierLookupKey($genre);
-    if (in_array($key, ['garcon', 'm', 'masculin'], true)) {
-        return 'M';
-    }
-
-    if (in_array($key, ['fille', 'f', 'feminin'], true)) {
-        return 'F';
-    }
-
-    throw new InvalidArgumentException('Genre invalide pour la generation de l identifiant.');
 }
 
 function nextRegistrationStepUrl(int $idInscrit): string

@@ -174,7 +174,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                             $sectionPercent = $nombreTotal > 0 ? (int) round(($sectionTotal / $nombreTotal) * 100) : 0;
                             ?>
                             <tr>
-                                <td><?= e(canonicalSectionName($section['section_nom'] ?? null)) ?></td>
+                                <td><?= e(\Patro\Domain\Inscription\SectionName::canonical($section['section_nom'] ?? null)) ?></td>
                                 <td><?= e($sectionTotal) ?></td>
                                 <td>
                                     <div class="stats-progress stats-progress-table"><span style="width: <?= e($sectionPercent) ?>%"></span></div>

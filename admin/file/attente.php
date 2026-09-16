@@ -159,7 +159,7 @@ $assetBase = rtrim($assetBase ?? '../Backend/Assets', '/');
                             <td><?= e((string) ($inscription['prenom'] ?? '')) ?></td>
                             <td><?= e((string) ($inscription['date_naissance'] ?? '')) ?></td>
                             <td><?= e((string) ($inscription['genre'] ?? '')) ?></td>
-                            <td><?= e(canonicalSectionName($inscription['nom_section'] ?? null)) ?></td>
+                            <td><?= e(\Patro\Domain\Inscription\SectionName::canonical($inscription['nom_section'] ?? null)) ?></td>
                             <td><?= e(formatFcfa((int) ($inscription['montant_inscription'] ?? 0))) ?></td>
                             <td><span class="badge bg-warning"><?= e((string) ($inscription['etat'] ?? '')) ?></span></td>
                             <?php if ($canValidate): ?>

@@ -90,7 +90,7 @@ function safeDisplay($value) {
     <?php if ($showSectionColumn): ?>
         <td class="text-center">
             <span class="section-display">
-                <?= safeDisplay(canonicalSectionName($section) ?? 'Non spécifié') ?>
+                <?= safeDisplay(\Patro\Domain\Inscription\SectionName::canonical($section) ?? 'Non spécifié') ?>
             </span>
         </td>
     <?php endif; ?>

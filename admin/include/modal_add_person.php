@@ -11,7 +11,7 @@ if ($baseRedirectParams) {
 }
 $modalCandidates = array_map(static function (array $candidate) use ($showSectionColumn): array {
     $candidateName = trim((string) ($candidate['nom'] ?? '') . ' ' . (string) ($candidate['prenom'] ?? ''));
-    $candidateMeta = trim((string) ($candidate['genre'] ?? '') . ($showSectionColumn ? ' - ' . canonicalSectionName($candidate['section'] ?? null) : ''), ' -');
+    $candidateMeta = trim((string) ($candidate['genre'] ?? '') . ($showSectionColumn ? ' - ' . \Patro\Domain\Inscription\SectionName::canonical($candidate['section'] ?? null) : ''), ' -');
 
     return [
         'id' => (int) ($candidate['id_inscrit'] ?? 0),
