@@ -107,7 +107,7 @@ $typeSession = (string) ($existing['type_session'] ?? appContainer()->get(\Patro
 $nom = appCleanText((string) ($payload['nom'] ?? ''), 120);
 $prenom = appCleanText((string) ($payload['prenom'] ?? ''), 120);
 $dateNaissance = trim((string) ($payload['date_naissance'] ?? ''));
-$genre = normalizeGenre((string) ($payload['genre'] ?? ''));
+$genre = \Patro\Domain\Inscription\Genre::normalize((string) ($payload['genre'] ?? ''));
 $tel = normalizeIvorianPhone((string) ($payload['tel'] ?? ''));
 $adresse = appCleanText((string) ($payload['adresse'] ?? ''), 180);
 
@@ -117,7 +117,7 @@ if ($nom === '' || $prenom === '' || $dateNaissance === '' || $genre === '' || $
     exit();
 }
 
-if (!in_array($genre, validGenres(), true)) {
+if (!in_array($genre, \Patro\Domain\Inscription\Genre::values(), true)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Genre invalide.']);
     exit();
@@ -145,7 +145,7 @@ if ($age === null) {
 }
 
 $section = appContainer()->get(\Patro\Inscription\SectionService::class)
-    ->findMatchingSection(normalizeGenre($genre), calculateAge($dateNaissance, $annee) ?? -1, $typeSession);
+    ->findMatchingSection(\Patro\Domain\Inscription\Genre::normalize($genre), calculateAge($dateNaissance, $annee) ?? -1, $typeSession);
 if ($section === null && sectionBreakdownEnabled($typeSession)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);

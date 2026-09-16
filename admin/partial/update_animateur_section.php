@@ -68,7 +68,7 @@ if (!$animateurSession) {
     respond(404, false, "Cet animateur n'est pas inscrit sur la session active.");
 }
 
-$genreAnimateur = normalizeAnimateurGenre((string) ($animateurSession['genre_a'] ?? ''));
+$genreAnimateur = \Patro\Domain\Animateur\AnimateurGenre::normalize((string) ($animateurSession['genre_a'] ?? ''));
 $genreSectionAttendu = $genreAnimateur === 'M' ? 'Garçon' : ($genreAnimateur === 'F' ? 'Fille' : null);
 
 $nomSection = null;
@@ -80,7 +80,7 @@ if ($idSection !== null) {
         respond(404, false, 'Section introuvable.');
     }
 
-    if ($genreSectionAttendu !== null && normalizeGenre((string) $sectionRow['genre']) !== $genreSectionAttendu) {
+    if ($genreSectionAttendu !== null && \Patro\Domain\Inscription\Genre::normalize((string) $sectionRow['genre']) !== $genreSectionAttendu) {
         respond(422, false, "Cette section ne correspond pas au genre de l'animateur.");
     }
 

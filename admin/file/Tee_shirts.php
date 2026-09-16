@@ -10,14 +10,14 @@ $typeSessionActive = activeSessionTypeFromRequest();
 $searchQuery = requestTextParam('search', 80);
 $genreFilterKey = strtolower(trim((string) ($_GET['genre'] ?? $_POST['genre'] ?? '')));
 $genreFilter = match ($genreFilterKey) {
-    'garcon', 'garcons', 'garçon', 'garçons' => normalizeGenre('Garcon'),
-    'fille', 'filles' => normalizeGenre('Fille'),
+    'garcon', 'garcons', 'garçon', 'garçons' => \Patro\Domain\Inscription\Genre::GARCON->value,
+    'fille', 'filles' => \Patro\Domain\Inscription\Genre::FILLE->value,
     default => '',
 };
 
 $teeShirtRegistrations = [];
 $message = '';
-$genderLabel = $genreFilter === '' ? 'Tous les genres' : ($genreFilter === normalizeGenre('Fille') ? 'Filles' : 'Garçons');
+$genderLabel = $genreFilter === '' ? 'Tous les genres' : ($genreFilter === \Patro\Domain\Inscription\Genre::FILLE->value ? 'Filles' : 'Garçons');
 $showSectionColumn = sectionBreakdownEnabled($typeSessionActive);
 
 $baseRedirectParams = [
@@ -60,7 +60,7 @@ if ($showSectionColumn) {
     }
 } else {
     foreach ($teeShirtRegistrations as $inscrit) {
-        $key = ($inscrit['genre'] === normalizeGenre('Fille')) ? 'Filles' : 'Garçons';
+        $key = ($inscrit['genre'] === \Patro\Domain\Inscription\Genre::FILLE->value) ? 'Filles' : 'Garçons';
         $groupedRegistrations[$key][] = $inscrit;
     }
 }

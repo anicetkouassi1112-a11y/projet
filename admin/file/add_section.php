@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $sections = appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections();
 $sectionsByGenre = ['Garçon' => [], 'Fille' => []];
 foreach ($sections as $section) {
-    $sectionGenre = normalizeGenre((string) ($section['genre'] ?? ''));
+    $sectionGenre = \Patro\Domain\Inscription\Genre::normalize((string) ($section['genre'] ?? ''));
     if (isset($sectionsByGenre[$sectionGenre])) {
         $sectionsByGenre[$sectionGenre][] = $section;
     }

@@ -588,33 +588,6 @@ function isValidIvorianPhone(string $phone): bool
     return (bool) preg_match('/^(01|05|07)[0-9]{8}$/', $phone);
 }
 
-function validGenres(): array
-{
-    return ['Garçon', 'Fille'];
-}
-
-function normalizeGenre(?string $genre): string
-{
-    return match (identifierLookupKey((string) $genre)) {
-        'garcon', 'garçon', 'masculin', 'm' => 'Garçon',
-        'fille', 'feminin', 'f' => 'Fille',
-        default => '',
-    };
-}
-
-/**
- * Normalise le genre pour la table `animateur`, dont la colonne genre_a
- * est un ENUM('M','F') — à ne pas confondre avec normalizeGenre() qui
- * cible les ENUM('Garçon','Fille') de `section`/`utilisateur`.
- */
-function normalizeAnimateurGenre(?string $genre): string
-{
-    return match (identifierLookupKey((string) $genre)) {
-        'masculin', 'm' => 'M',
-        'feminin', 'f' => 'F',
-        default => '',
-    };
-}
 function photoModuleEnabled(): bool
 {
     return false;

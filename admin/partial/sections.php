@@ -7,7 +7,7 @@ function sectionConfig(string $genderKey): array
     $genre = $genderKey === 'fille' ? 'Fille' : 'Garçon';
     $sections = [];
     foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
-        if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) continue;
+        if (\Patro\Domain\Inscription\Genre::normalize((string) ($section['genre'] ?? '')) !== $genre) continue;
 
         $key = (string) (int) $section['id_section'];
         $sections[$key] = [
@@ -93,7 +93,7 @@ function genderPageContext(string $genderKey, int $anneeActive, ?string $typeSes
  */
 function fetchAnimateursBySectionIds(array $sectionIds, int $idSession, ?string $genre, bool $isScolaire = false): array
 {
-    $normalizedGenre = $genre !== null ? normalizeAnimateurGenre($genre) : null;
+    $normalizedGenre = $genre !== null ? \Patro\Domain\Animateur\AnimateurGenre::normalize($genre) : null;
     return appContainer()->get(\Patro\Domain\Animateur\Repository\AnimateurRepository::class)
         ->findBySectionIds($sectionIds, $idSession, $normalizedGenre !== '' ? $normalizedGenre : null, $isScolaire);
 }
@@ -108,7 +108,7 @@ function animateurSectionConfig(string $genderKey): array
 
     $sections = [];
     foreach (appContainer()->get(\Patro\Inscription\SectionService::class)->getAllSections() as $section) {
-        if (normalizeGenre((string) ($section['genre'] ?? '')) !== $genre) {
+        if (\Patro\Domain\Inscription\Genre::normalize((string) ($section['genre'] ?? '')) !== $genre) {
             continue;
         }
 
@@ -227,7 +227,7 @@ function sectionIdsByNames(array $names): array
 function fetchInscritsBySectionIds(array $sectionIds, int $idSession, ?string $genre, bool $isScolaire = false): array
 {
     return appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findBySectionIds($sectionIds, $idSession, $genre !== null ? normalizeGenre($genre) : null, $isScolaire);
+        ->findBySectionIds($sectionIds, $idSession, $genre !== null ? \Patro\Domain\Inscription\Genre::normalize($genre) : null, $isScolaire);
 }
 
 function fetchInscritsByGenre(string $genre, int $idSession, string $etat = 'inscrit'): array
@@ -244,7 +244,7 @@ function fetchInscritsBySections(array $sectionNames, int $idSession, ?string $g
     }
 
     return appContainer()->get(\Patro\Domain\Inscription\Repository\InscriptionRepository::class)
-        ->findBySections($sectionIds, $idSession, $genre !== null ? normalizeGenre($genre) : null, $etat);
+        ->findBySections($sectionIds, $idSession, $genre !== null ? \Patro\Domain\Inscription\Genre::normalize($genre) : null, $etat);
 }
 
 function sectionCounts(array $inscrits): array

@@ -21,8 +21,8 @@ try {
         $anneeId,
         $typeSessionActive,
         'inscrit',
-        normalizeGenre('Garcon'),
-        normalizeGenre('Fille')
+        \Patro\Domain\Inscription\Genre::GARCON->value,
+        \Patro\Domain\Inscription\Genre::FILLE->value
     );
     $pendingCount = $statisticsRepository->pendingCount($anneeId, $typeSessionActive, 'En attente');
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Patro\Inscription;
 
+use Patro\Domain\Inscription\Genre;
 use Patro\Domain\Inscription\Repository\SectionRepository;
 use PDO;
 use PDOException;
@@ -13,7 +14,6 @@ use PDOException;
  */
 class SectionService
 {
-    private const VALID_GENRES = ['Garçon', 'Fille'];
     private PDO $connection;
     private SectionRepository $repository;
 
@@ -62,7 +62,7 @@ class SectionService
             return ['success' => false, 'message' => 'Le nom de la section est obligatoire.', 'alert_type' => 'warning'];
         }
 
-        if (!in_array($genre, self::VALID_GENRES, true)) {
+        if (!in_array($genre, Genre::values(), true)) {
             return ['success' => false, 'message' => 'Le genre de la section est obligatoire.', 'alert_type' => 'warning'];
         }
 
@@ -117,7 +117,7 @@ class SectionService
     public function findMatchingSection(string $genre, int $age, ?string $typeSession = null): ?array
     {
         $genre = $this->normalizeGenre($genre);
-        if (!in_array($genre, self::VALID_GENRES, true)) {
+        if (!in_array($genre, Genre::values(), true)) {
             return null;
         }
 
@@ -147,14 +147,9 @@ class SectionService
     /**
      * Normalise le genre
      */
-    private function normalizeGenre(?string $genre): string
+    public function normalizeGenre(?string $genre): string
     {
-        $key = $this->identifierLookupKey((string) $genre);
-        return match ($key) {
-            'garcon', 'garçon', 'masculin', 'm' => 'Garçon',
-            'fille', 'feminin', 'f' => 'Fille',
-            default => '',
-        };
+        return Genre::normalize($genre);
     }
 
     /**
@@ -168,38 +163,10 @@ class SectionService
     /**
      * Vérifie si la répartition par section est activée
      */
-    private function sectionBreakdownEnabled(?string $typeSession = null): bool
+    public function sectionBreakdownEnabled(?string $typeSession = null): bool
     {
         $typeSession = strtolower(trim((string) $typeSession));
         return in_array($typeSession, ['vacance'], true);
     }
 
-    /**
-     * Clé de recherche normalisée
-     */
-    private function identifierLookupKey(string $value): string
-    {
-        $value = trim($value);
-        $value = function_exists('mb_strtolower') ? mb_strtolower($value, 'UTF-8') : strtolower($value);
-
-        $value = strtr($value, [
-            'à' => 'a', 'â' => 'a', 'ä' => 'a',
-            'ç' => 'c',
-            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
-            'î' => 'i', 'ï' => 'i',
-            'ô' => 'o', 'ö' => 'o',
-            'ù' => 'u', 'û' => 'u', 'ü' => 'u',
-        ]);
-
-        $value = strtr($value, [
-            'Ã ' => 'a', 'Ã¢' => 'a', 'Ã¤' => 'a',
-            'Ã§' => 'c',
-            'Ã©' => 'e', 'Ã¨' => 'e', 'Ãª' => 'e', 'Ã«' => 'e',
-            'Ã®' => 'i', 'Ã¯' => 'i',
-            'Ã´' => 'o', 'Ã¶' => 'o',
-            'Ã¹' => 'u', 'Ã»' => 'u', 'Ã¼' => 'u',
-        ]);
-
-        return preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
-    }
 }
