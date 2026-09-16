@@ -19,7 +19,7 @@ if (!$inscrit || empty($inscrit['etat'])) {
 $anneeInscription = (int) ($inscrit['annee'] ?? date('Y'));
 $age = '';
 if (!empty($inscrit['date_naissance'])) {
-    $computedAge = calculateAge((string) $inscrit['date_naissance'], $anneeInscription);
+    $computedAge = \Patro\Domain\Inscription\AgeCalculator::calculate((string) $inscrit['date_naissance'], $anneeInscription);
     $age = $computedAge === null ? 'N/A' : (string) $computedAge;
 }
 

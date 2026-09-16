@@ -24,7 +24,7 @@ $idSessionInscrit = (int) ($inscrit['id_session'] ?? 0);
 $age = '';
 if (!empty($dateNaissance)) {
     $anneeActive = (int) ($anneeActive ?? date('Y'));
-    $computedAge = calculateAge($dateNaissance, $anneeActive);
+    $computedAge = \Patro\Domain\Inscription\AgeCalculator::calculate($dateNaissance, $anneeActive);
     $age = $computedAge === null ? 'N/A' : (string) $computedAge;
 }
 

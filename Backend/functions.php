@@ -577,17 +577,6 @@ function getFlashMessages(): array
     return is_array($messages) ? $messages : [];
 }
 
-function normalizeIvorianPhone(string $phone): string
-{
-    return preg_replace('/\D+/', '', $phone) ?? '';
-}
-
-function isValidIvorianPhone(string $phone): bool
-{
-    $phone = normalizeIvorianPhone($phone);
-    return (bool) preg_match('/^(01|05|07)[0-9]{8}$/', $phone);
-}
-
 function photoModuleEnabled(): bool
 {
     return false;
@@ -617,20 +606,6 @@ function sectionBreakdownEnabled(?string $typeSession = null): bool
     ) !== 'scolaire';
 }
 
-
-function calculateAge(string $dateNaissance, ?int $referenceYear = null): ?int
-{
-    try {
-        $birthDate = new DateTimeImmutable($dateNaissance);
-        $reference = $referenceYear
-            ? new DateTimeImmutable($referenceYear . '-12-31')
-            : new DateTimeImmutable('today');
-
-        return $reference->diff($birthDate)->y;
-    } catch (Throwable $e) {
-        return null;
-    }
-}
 
 function canAccessPublicInscrit(int $idInscrit): bool
 {

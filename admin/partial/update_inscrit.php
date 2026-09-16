@@ -108,7 +108,7 @@ $nom = appCleanText((string) ($payload['nom'] ?? ''), 120);
 $prenom = appCleanText((string) ($payload['prenom'] ?? ''), 120);
 $dateNaissance = trim((string) ($payload['date_naissance'] ?? ''));
 $genre = \Patro\Domain\Inscription\Genre::normalize((string) ($payload['genre'] ?? ''));
-$tel = normalizeIvorianPhone((string) ($payload['tel'] ?? ''));
+$tel = \Patro\Domain\Inscription\IvorianPhone::normalize((string) ($payload['tel'] ?? ''));
 $adresse = appCleanText((string) ($payload['adresse'] ?? ''), 180);
 
 if ($nom === '' || $prenom === '' || $dateNaissance === '' || $genre === '' || $tel === '' || $adresse === '') {
@@ -129,7 +129,7 @@ if (!isValidDateString($dateNaissance)) {
     exit();
 }
 
-if (!isValidIvorianPhone($tel)) {
+if (!\Patro\Domain\Inscription\IvorianPhone::isValid($tel)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Numero ivoirien invalide.']);
     exit();
@@ -137,7 +137,7 @@ if (!isValidIvorianPhone($tel)) {
 
 // 10. Mise a jour via le cas d usage applicatif
 $annee = (int) ($existing['annee'] ?? date('Y'));
-$age = calculateAge($dateNaissance, $annee);
+$age = \Patro\Domain\Inscription\AgeCalculator::calculate($dateNaissance, $annee);
 if ($age === null) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Age invalide pour une inscription patronier.']);
@@ -145,7 +145,7 @@ if ($age === null) {
 }
 
 $section = appContainer()->get(\Patro\Inscription\SectionService::class)
-    ->findMatchingSection(\Patro\Domain\Inscription\Genre::normalize($genre), calculateAge($dateNaissance, $annee) ?? -1, $typeSession);
+    ->findMatchingSection(\Patro\Domain\Inscription\Genre::normalize($genre), \Patro\Domain\Inscription\AgeCalculator::calculate($dateNaissance, $annee) ?? -1, $typeSession);
 if ($section === null && sectionBreakdownEnabled($typeSession)) {
     http_response_code(422);
     echo json_encode(['success' => false, 'message' => 'Aucune section ne correspond a cet age et ce genre. Veuillez contacter l administrateur.']);
